@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "544062960776",
+    "project_id": "com-example-littlerpg-e7ba4",
+    "storage_bucket": "com-example-littlerpg-e7ba4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:544062960776:android:20e437a21f26e670e0db3d",
+        "android_client_info": {
+          "package_name": "com.example.littlerpg"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBydG-qL7jD3ENcDF60AYXSVHu5K9-fa0g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
