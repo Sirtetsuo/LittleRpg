@@ -1,5 +1,6 @@
 package com.example.littlerpg.ui
 
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
@@ -16,9 +17,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -31,8 +37,12 @@ import com.example.littlerpg.ui.theme.LittleRpgTheme
 fun HomeScreen(
     hasSave: Boolean,
     onContinue: () -> Unit,
-    onNewGame: () -> Unit
+    onNewSoloGame: () -> Unit,
+    onNewMasterGame: () -> Unit
 ) {
+    val context = LocalContext.current
+    var isGoogleConnected by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -40,7 +50,7 @@ fun HomeScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         Text(
             text = "Little RPG",
@@ -53,8 +63,8 @@ fun HomeScreen(
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.fillMaxWidth(0.8f)
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.fillMaxWidth(0.85f)
         ) {
             OutlinedButton(
                 onClick = onContinue,
@@ -66,17 +76,17 @@ fun HomeScreen(
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp)
+                    .height(48.dp)
             ) {
                 Text(
                     text = "Continuer",
-                    fontSize = 18.sp,
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold
                 )
             }
 
             OutlinedButton(
-                onClick = onNewGame,
+                onClick = onNewSoloGame,
                 shape = RoundedCornerShape(8.dp),
                 border = BorderStroke(2.dp, Color.Black),
                 colors = ButtonDefaults.outlinedButtonColors(
@@ -84,11 +94,51 @@ fun HomeScreen(
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp)
+                    .height(48.dp)
             ) {
                 Text(
-                    text = "Nouvelle partie",
-                    fontSize = 18.sp,
+                    text = "Nouvelle partie solo",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            OutlinedButton(
+                onClick = onNewMasterGame,
+                shape = RoundedCornerShape(8.dp),
+                border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.primary
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+            ) {
+                Text(
+                    text = "👑 Nouvelle partie Master",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            OutlinedButton(
+                onClick = {
+                    isGoogleConnected = !isGoogleConnected
+                    val msg = if (isGoogleConnected) "Connecté à Google Drive ☁️ (Synchronisation activée)" else "Déconnecté de Google Drive"
+                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                },
+                shape = RoundedCornerShape(8.dp),
+                border = BorderStroke(1.dp, if (isGoogleConnected) Color(0xFF2E7D32) else Color(0xFF4285F4)),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = if (isGoogleConnected) Color(0xFF2E7D32) else Color(0xFF4285F4)
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(44.dp)
+            ) {
+                Text(
+                    text = if (isGoogleConnected) "☁️ Connecté à Google Drive" else "🌐 Connexion Google Drive",
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold
                 )
             }
@@ -101,7 +151,7 @@ fun HomeScreen(
             contentScale = androidx.compose.ui.layout.ContentScale.Crop,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(220.dp)
+                .height(180.dp)
                 .border(BorderStroke(1.dp, Color.LightGray), RoundedCornerShape(8.dp))
         )
     }
@@ -114,8 +164,8 @@ fun HomeScreenPreview() {
         HomeScreen(
             hasSave = true,
             onContinue = {},
-            onNewGame = {}
+            onNewSoloGame = {},
+            onNewMasterGame = {}
         )
     }
 }
-

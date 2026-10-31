@@ -71,6 +71,7 @@ fun GamePlayScreen(
     var customActionInput by remember { mutableStateOf("") }
     var showCharacterSheetDialog by remember { mutableStateOf(false) }
     var showSaveConfirmation by remember { mutableStateOf(false) }
+    var showSaveConfirmDialog by remember { mutableStateOf(false) }
 
     val scrollState = rememberScrollState()
 
@@ -85,6 +86,42 @@ fun GamePlayScreen(
             kotlinx.coroutines.delay(2000)
             showSaveConfirmation = false
         }
+    }
+
+    if (showSaveConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showSaveConfirmDialog = false },
+            title = {
+                Text(
+                    text = "💾 Confirmation de sauvegarde",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            },
+            text = {
+                Text(
+                    text = "Voulez-vous sauvegarder votre partie Solo ?\nAttention : Toute sauvegarde existante (Solo ou Master) sera remplacée.",
+                    fontSize = 14.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showSaveConfirmDialog = false
+                        onSaveGame()
+                        showSaveConfirmation = true
+                    }
+                ) {
+                    Text("Oui, sauvegarder 💾", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSaveConfirmDialog = false }) {
+                    Text("Annuler")
+                }
+            }
+        )
     }
 
     Column(
@@ -141,22 +178,21 @@ fun GamePlayScreen(
                     if (showSaveConfirmation) {
                         Box(contentAlignment = Alignment.Center, modifier = Modifier.weight(1f).height(36.dp)) {
                             Text(
-                                text = "Done",
-                                color = Color.Red,
+                                text = "Sauvegardé 💾",
+                                color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.ExtraBold,
-                                fontSize = 14.sp
+                                fontSize = 13.sp
                             )
                         }
                     } else {
                         OutlinedButton(
                             onClick = {
-                                onSaveGame()
-                                showSaveConfirmation = true
+                                showSaveConfirmDialog = true
                             },
                             shape = RoundedCornerShape(4.dp),
                             modifier = Modifier.height(36.dp).weight(1f)
                         ) {
-                            Text("💾 Save", fontSize = 11.sp)
+                            Text("💾 Sauver", fontSize = 11.sp)
                         }
                     }
                 }

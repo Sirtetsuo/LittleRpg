@@ -85,11 +85,33 @@ data class GameTurn(
     val isError: Boolean = false
 )
 
+enum class GameMode {
+    SOLO,
+    MASTER
+}
+
+data class MasterCharacter(
+    val name: String,
+    val role: String,
+    val status: String = "En forme",
+    val avatarEmoji: String = "🎭"
+)
+
+data class MasterTurn(
+    val turnId: Int = 1,
+    val dmPrompt: String = "",
+    val aiNarrative: String,
+    val partyStatus: List<MasterCharacter> = emptyList(),
+    val isError: Boolean = false
+)
+
 data class SaveState(
-    val character: Character,
+    val character: Character = Character(),
     val universe: Universe,
-    val storyHistory: List<GameTurn>,
-    val currentTurn: GameTurn?,
+    val storyHistory: List<GameTurn> = emptyList(),
+    val currentTurn: GameTurn? = null,
+    val gameMode: GameMode = GameMode.SOLO,
+    val masterHistory: List<MasterTurn> = emptyList(),
     val timestamp: Long = System.currentTimeMillis()
 )
 
@@ -100,5 +122,6 @@ enum class AppScreen {
     SKILL_SELECTION,
     ITEM_SELECTION,
     GAME_PLAY,
+    GAME_PLAY_MASTER,
     GAME_OVER
 }

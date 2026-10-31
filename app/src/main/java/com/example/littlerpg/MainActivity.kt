@@ -16,9 +16,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.littlerpg.model.AppScreen
+import com.example.littlerpg.model.GameMode
 import com.example.littlerpg.ui.CharacterCreationScreen
 import com.example.littlerpg.ui.GameOverScreen
 import com.example.littlerpg.ui.GamePlayScreen
+import com.example.littlerpg.ui.GamePlayScreenMaster
 import com.example.littlerpg.ui.HomeScreen
 import com.example.littlerpg.ui.ItemSelectionStep
 import com.example.littlerpg.ui.SkillSelectionStep
@@ -54,6 +56,7 @@ fun LittleRpgApp(
     val availableItems by viewModel.availableItems.collectAsState()
     val currentTurn by viewModel.currentTurn.collectAsState()
     val storyHistory by viewModel.storyHistory.collectAsState()
+    val masterHistory by viewModel.masterHistory.collectAsState()
     val lastDiceResult by viewModel.lastDiceResult.collectAsState()
     val pendingJokerAction by viewModel.pendingJokerAction.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -73,8 +76,11 @@ fun LittleRpgApp(
                             Toast.makeText(context, "Impossible de charger la sauvegarde", Toast.LENGTH_SHORT).show()
                         }
                     },
-                    onNewGame = {
-                        viewModel.startNewGame()
+                    onNewSoloGame = {
+                        viewModel.startNewGame(GameMode.SOLO)
+                    },
+                    onNewMasterGame = {
+                        viewModel.startNewGame(GameMode.MASTER)
                     }
                 )
             }
@@ -82,7 +88,7 @@ fun LittleRpgApp(
             AppScreen.UNIVERSE_SELECTION -> {
                 UniverseSelectionScreen(
                     onSelectUniverse = { universe ->
-                        viewModel.selectUniverse(universe)
+                        viewModel.selectUniverse(universe, context)
                     }
                 )
             }
@@ -153,6 +159,20 @@ fun LittleRpgApp(
                 )
             }
 
+            AppScreen.GAME_PLAY_MASTER -> {
+                GamePlayScreenMaster(
+                    universe = selectedUniverse,
+                    masterHistory = masterHistory,
+                    isLoading = isLoading,
+                    onSubmitDmAction = { dmActionText ->
+                        viewModel.submitDmAction(dmActionText, context)
+                    },
+                    onSaveGame = {
+                        viewModel.saveGame(context)
+                    }
+                )
+            }
+
             AppScreen.GAME_OVER -> {
                 GameOverScreen(
                     onLoadGame = {
@@ -162,7 +182,7 @@ fun LittleRpgApp(
                         }
                     },
                     onNewGame = {
-                        viewModel.startNewGame()
+                        viewModel.startNewGame(GameMode.SOLO)
                     }
                 )
             }

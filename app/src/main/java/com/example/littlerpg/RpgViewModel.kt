@@ -7,14 +7,17 @@ import com.example.littlerpg.model.AppScreen
 import com.example.littlerpg.model.Character
 import com.example.littlerpg.model.ChoiceOption
 import com.example.littlerpg.model.Dice100Result
+import com.example.littlerpg.model.GameMode
 import com.example.littlerpg.model.GameTurn
 import com.example.littlerpg.model.Item
+import com.example.littlerpg.model.MasterTurn
 import com.example.littlerpg.model.SaveState
 import com.example.littlerpg.model.Skill
 import com.example.littlerpg.model.SkillTier
 import com.example.littlerpg.model.Universe
 import com.example.littlerpg.service.GeminiRpgService
 import com.example.littlerpg.util.SaveManager
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,6 +30,9 @@ class RpgViewModel(
 
     private val _currentScreen = MutableStateFlow(AppScreen.HOME)
     val currentScreen: StateFlow<AppScreen> = _currentScreen.asStateFlow()
+
+    private val _gameMode = MutableStateFlow(GameMode.SOLO)
+    val gameMode: StateFlow<GameMode> = _gameMode.asStateFlow()
 
     private val _selectedUniverse = MutableStateFlow<Universe?>(null)
     val selectedUniverse: StateFlow<Universe?> = _selectedUniverse.asStateFlow()
@@ -42,6 +48,9 @@ class RpgViewModel(
 
     private val _storyHistory = MutableStateFlow<List<GameTurn>>(emptyList())
     val storyHistory: StateFlow<List<GameTurn>> = _storyHistory.asStateFlow()
+
+    private val _masterHistory = MutableStateFlow<List<MasterTurn>>(emptyList())
+    val masterHistory: StateFlow<List<MasterTurn>> = _masterHistory.asStateFlow()
 
     private val _currentTurn = MutableStateFlow<GameTurn?>(null)
     val currentTurn: StateFlow<GameTurn?> = _currentTurn.asStateFlow()
@@ -62,20 +71,54 @@ class RpgViewModel(
         _hasSave.value = SaveManager.hasSavedGame(context)
     }
 
-    fun startNewGame() {
+    fun startNewGame(mode: GameMode = GameMode.SOLO) {
+        _gameMode.value = mode
         _selectedUniverse.value = null
         _character.value = Character()
         _availableSkills.value = emptyList()
         _availableItems.value = emptyList()
         _storyHistory.value = emptyList()
+        _masterHistory.value = emptyList()
         _currentTurn.value = null
         _lastDiceResult.value = null
         _currentScreen.value = AppScreen.UNIVERSE_SELECTION
     }
 
-    fun selectUniverse(universe: Universe) {
+    fun selectUniverse(universe: Universe, context: Context? = null) {
         _selectedUniverse.value = universe
-        _currentScreen.value = AppScreen.CHARACTER_CREATION
+        if (_gameMode.value == GameMode.MASTER) {
+            _currentScreen.value = AppScreen.GAME_PLAY_MASTER
+            startMasterAdventure(universe, context)
+        } else {
+            _currentScreen.value = AppScreen.CHARACTER_CREATION
+        }
+    }
+
+    private fun startMasterAdventure(universe: Universe, context: Context?) {
+        _isLoading.value = true
+        _masterHistory.value = emptyList()
+        viewModelScope.launch {
+            val initialPrompt = "Le Maître du Jeu (MJ) ouvre la séance. Présentez vos personnages et préparez-vous !"
+            val turn = rpgService.generateMasterTurn(universe, emptyList(), initialPrompt)
+            _masterHistory.value = listOf(turn)
+            _isLoading.value = false
+
+            if (context != null) {
+                autoSaveGame(context)
+            }
+        }
+    }
+
+    fun submitDmAction(dmActionText: String, context: Context) {
+        val universe = _selectedUniverse.value ?: Universe.FANTASTIQUE
+        _isLoading.value = true
+
+        viewModelScope.launch {
+            val turn = rpgService.generateMasterTurn(universe, _masterHistory.value, dmActionText)
+            _masterHistory.value = _masterHistory.value + turn
+            _isLoading.value = false
+            autoSaveGame(context)
+        }
     }
 
     fun saveCharacterInfo(
@@ -248,13 +291,22 @@ class RpgViewModel(
         _character.value = save.character
         _selectedUniverse.value = save.universe
         _storyHistory.value = save.storyHistory
+        _masterHistory.value = save.masterHistory
+        _gameMode.value = save.gameMode
         _currentTurn.value = save.currentTurn ?: save.storyHistory.lastOrNull()
-        _currentScreen.value = AppScreen.GAME_PLAY
+        
+        if (save.gameMode == GameMode.MASTER) {
+            _currentScreen.value = AppScreen.GAME_PLAY_MASTER
+        } else {
+            _currentScreen.value = AppScreen.GAME_PLAY
+        }
         return true
     }
 
     fun saveGame(context: Context): Boolean {
-        autoSaveGame(context)
+        viewModelScope.launch(Dispatchers.IO) {
+            autoSaveGame(context)
+        }
         return true
     }
 
@@ -264,7 +316,9 @@ class RpgViewModel(
             character = _character.value,
             universe = universe,
             storyHistory = _storyHistory.value,
-            currentTurn = _currentTurn.value
+            currentTurn = _currentTurn.value,
+            gameMode = _gameMode.value,
+            masterHistory = _masterHistory.value
         )
         SaveManager.saveGame(context, saveState)
         _hasSave.value = true

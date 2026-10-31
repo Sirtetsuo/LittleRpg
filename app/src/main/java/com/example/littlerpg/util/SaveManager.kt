@@ -5,8 +5,11 @@ import android.content.SharedPreferences
 import com.example.littlerpg.model.Character
 import com.example.littlerpg.model.ChoiceOption
 import com.example.littlerpg.model.Dice100Result
+import com.example.littlerpg.model.GameMode
 import com.example.littlerpg.model.GameTurn
 import com.example.littlerpg.model.Item
+import com.example.littlerpg.model.MasterCharacter
+import com.example.littlerpg.model.MasterTurn
 import com.example.littlerpg.model.SaveState
 import com.example.littlerpg.model.Skill
 import com.example.littlerpg.model.SkillTier
@@ -36,12 +39,17 @@ object SaveManager {
         return try {
             val jsonObject = JSONObject()
             jsonObject.put("universe", saveState.universe.name)
+            jsonObject.put("gameMode", saveState.gameMode.name)
             jsonObject.put("timestamp", saveState.timestamp)
             jsonObject.put("character", characterToJson(saveState.character))
 
             val historyArray = JSONArray()
             saveState.storyHistory.forEach { historyArray.put(turnToJson(it)) }
             jsonObject.put("storyHistory", historyArray)
+
+            val masterArray = JSONArray()
+            saveState.masterHistory.forEach { masterArray.put(masterTurnToJson(it)) }
+            jsonObject.put("masterHistory", masterArray)
 
             saveState.currentTurn?.let {
                 jsonObject.put("currentTurn", turnToJson(it))
@@ -60,13 +68,29 @@ object SaveManager {
         return try {
             val root = JSONObject(jsonStr)
             val universe = Universe.valueOf(root.getString("universe"))
+            val modeStr = root.optString("gameMode", GameMode.SOLO.name)
+            val gameMode = try {
+                GameMode.valueOf(modeStr)
+            } catch (_: Exception) {
+                GameMode.SOLO
+            }
             val timestamp = root.optLong("timestamp", System.currentTimeMillis())
             val character = jsonToCharacter(root.getJSONObject("character"))
 
-            val historyArray = root.getJSONArray("storyHistory")
+            val historyArray = root.optJSONArray("storyHistory")
             val storyHistory = mutableListOf<GameTurn>()
-            for (i in 0 until historyArray.length()) {
-                storyHistory.add(jsonToTurn(historyArray.getJSONObject(i)))
+            if (historyArray != null) {
+                for (i in 0 until historyArray.length()) {
+                    storyHistory.add(jsonToTurn(historyArray.getJSONObject(i)))
+                }
+            }
+
+            val masterArray = root.optJSONArray("masterHistory")
+            val masterHistory = mutableListOf<MasterTurn>()
+            if (masterArray != null) {
+                for (i in 0 until masterArray.length()) {
+                    masterHistory.add(jsonToMasterTurn(masterArray.getJSONObject(i)))
+                }
             }
 
             val currentTurn = if (root.has("currentTurn")) {
@@ -78,6 +102,8 @@ object SaveManager {
                 universe = universe,
                 storyHistory = storyHistory,
                 currentTurn = currentTurn,
+                gameMode = gameMode,
+                masterHistory = masterHistory,
                 timestamp = timestamp
             )
         } catch (e: Exception) {
@@ -266,6 +292,54 @@ object SaveManager {
             diceResult = diceResult,
             isCombat = isCombat,
             hpChanged = hpChanged
+        )
+    }
+
+    private fun masterTurnToJson(turn: MasterTurn): JSONObject {
+        val obj = JSONObject()
+        obj.put("turnId", turn.turnId)
+        obj.put("dmPrompt", turn.dmPrompt)
+        obj.put("aiNarrative", turn.aiNarrative)
+        obj.put("isError", turn.isError)
+        val partyArr = JSONArray()
+        turn.partyStatus.forEach { member ->
+            val mObj = JSONObject()
+            mObj.put("name", member.name)
+            mObj.put("role", member.role)
+            mObj.put("status", member.status)
+            mObj.put("avatarEmoji", member.avatarEmoji)
+            partyArr.put(mObj)
+        }
+        obj.put("partyStatus", partyArr)
+        return obj
+    }
+
+    private fun jsonToMasterTurn(obj: JSONObject): MasterTurn {
+        val turnId = obj.optInt("turnId", 1)
+        val dmPrompt = obj.optString("dmPrompt", "")
+        val aiNarrative = obj.optString("aiNarrative", "")
+        val isError = obj.optBoolean("isError", false)
+        val partyList = mutableListOf<MasterCharacter>()
+        if (obj.has("partyStatus")) {
+            val pArr = obj.getJSONArray("partyStatus")
+            for (i in 0 until pArr.length()) {
+                val pObj = pArr.getJSONObject(i)
+                partyList.add(
+                    MasterCharacter(
+                        name = pObj.optString("name", ""),
+                        role = pObj.optString("role", ""),
+                        status = pObj.optString("status", ""),
+                        avatarEmoji = pObj.optString("avatarEmoji", "🎭")
+                    )
+                )
+            }
+        }
+        return MasterTurn(
+            turnId = turnId,
+            dmPrompt = dmPrompt,
+            aiNarrative = aiNarrative,
+            partyStatus = partyList,
+            isError = isError
         )
     }
 }
