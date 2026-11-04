@@ -15,11 +15,11 @@ enum class Universe(
     CONTEMPORAIN("Contemporain", "Monde moderne, enquêtes nocturnes et mystères urbains", "🏙️", R.drawable.contemporain)
 }
 
-enum class SkillTier(val label: String, val percentage: Int, val emoji: String) {
-    MAITRE("Maître", 70, "🥇"),
-    EXPERT("Expert", 60, "🥈"),
-    ANNEXE("Annexe", 50, "🥉"),
-    BASE("Base", 40, "⚪")
+enum class SkillTier(val label: String, val emoji: String) {
+    MAITRE("Maître", "🥇"),
+    EXPERT("Expert", "🥈"),
+    ANNEXE("Annexe", "🥉"),
+    BASE("Base", "⚪")
 }
 
 data class Skill(

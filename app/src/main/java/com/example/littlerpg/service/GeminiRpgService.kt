@@ -188,7 +188,7 @@ class GeminiRpgService {
                 )
             }
             if (result.size >= 3) result else getFallbackItems(Universe.FANTASTIQUE)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             Log.w("GeminiRpgService", "Failed to parse items JSON, using fallback.")
             getFallbackItems(Universe.FANTASTIQUE)
         }

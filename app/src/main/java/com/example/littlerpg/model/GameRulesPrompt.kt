@@ -212,7 +212,7 @@ object GameRulesPrompt {
             Rôle de l'utilisateur: MAÎTRE DU JEU (MJ)
             
             Historique récent de la partie:
-            ${if (lastTurns.isBlank()) "C'est l'ouverture de la partie par le MJ." else lastTurns}
+            ${lastTurns.ifBlank { "C'est l'ouverture de la partie par le MJ." }}
             
             Intervention / Description du MJ:
             "$dmActionText"
