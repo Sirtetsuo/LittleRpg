@@ -29,70 +29,77 @@ class NarrativeEngine {
         }
     }
 
-    fun generateActionOptions(universe: UniverseType, turnCount: Int = 0): List<ActionOption> {
+    fun generateActionOptions(
+        universe: UniverseType,
+        turnCount: Int = 0,
+        character: Character? = null
+    ): List<ActionOption> {
         val setIndex = turnCount % 3
-        return when (universe) {
+        val inventory = character?.inventory?.ifEmpty { null } ?: listOf("Une épée rouillée", "Une gourde", "Une potion de soin")
+        val selectedItem = inventory[turnCount % inventory.size]
+        val itemOption = ActionOption(
+            id = 4,
+            label = "Utiliser un objet : $selectedItem",
+            skill = Skill.MAGIC,
+            isItemAction = true,
+            itemName = selectedItem
+        )
+
+        val baseOptions = when (universe) {
             UniverseType.FANTASTIC -> when (setIndex) {
                 0 -> listOf(
                     ActionOption(1, "Défoncer la porte blindée", Skill.BREAK),
                     ActionOption(2, "Crocheter la serrure antique", Skill.LOCK_TRAP),
-                    ActionOption(3, "Forcer les gonds en fer", Skill.LIFT_PUSH),
-                    ActionOption(4, "Invoquer un sort de déverrouillage", Skill.MAGIC)
+                    ActionOption(3, "Forcer les gonds en fer", Skill.LIFT_PUSH)
                 )
                 1 -> listOf(
                     ActionOption(1, "Engager le garde au corps-à-corps", Skill.COMBAT),
                     ActionOption(2, "Tirer une flèche de précision", Skill.SHOOT),
-                    ActionOption(3, "Persuader les sentinelles de laisser passer", Skill.PERSUASION),
-                    ActionOption(4, "Escalader les remparts du donjon", Skill.CLIMB)
+                    ActionOption(3, "Persuader les sentinelles de laisser passer", Skill.PERSUASION)
                 )
                 else -> listOf(
                     ActionOption(1, "Sauter au-dessus du gouffre", Skill.EXTREME_JUMP),
                     ActionOption(2, "Lancer une boule de feu mystique", Skill.MAGIC),
-                    ActionOption(3, "Désamorcer le piège à runes", Skill.LOCK_TRAP),
-                    ActionOption(4, "Briser la herse en bois", Skill.BREAK)
+                    ActionOption(3, "Désamorcer le piège à runes", Skill.LOCK_TRAP)
                 )
             }
             UniverseType.CONTEMPORARY -> when (setIndex) {
                 0 -> listOf(
                     ActionOption(1, "Neutraliser l'agent de sécurité", Skill.COMBAT),
                     ActionOption(2, "Pirater le boîtier de serrure", Skill.LOCK_TRAP),
-                    ActionOption(3, "Négocier fermement avec la cible", Skill.PERSUASION),
-                    ActionOption(4, "Escalader la façade de l'entrepôt", Skill.CLIMB)
+                    ActionOption(3, "Négocier fermement avec la cible", Skill.PERSUASION)
                 )
                 1 -> listOf(
                     ActionOption(1, "Tirer un coup de semonce", Skill.SHOOT),
                     ActionOption(2, "Forcer la grille d'aération", Skill.LIFT_PUSH),
-                    ActionOption(3, "Trouver une faille logique", Skill.MAGIC),
-                    ActionOption(4, "Enfoncer la porte de secours", Skill.BREAK)
+                    ActionOption(3, "Trouver une faille logique", Skill.MAGIC)
                 )
                 else -> listOf(
                     ActionOption(1, "Sauter par-dessus la barrière", Skill.EXTREME_JUMP),
                     ActionOption(2, "Intimider le garde de nuit", Skill.PERSUASION),
-                    ActionOption(3, "Crocheter la porte du sous-sol", Skill.LOCK_TRAP),
-                    ActionOption(4, "Casser la vitre renforcée", Skill.BREAK)
+                    ActionOption(3, "Crocheter la porte du sous-sol", Skill.LOCK_TRAP)
                 )
             }
             UniverseType.FUTURISTIC -> when (setIndex) {
                 0 -> listOf(
                     ActionOption(1, "Tirer au blaster plasma", Skill.SHOOT),
                     ActionOption(2, "Piratage d'accès cybernétique", Skill.LOCK_TRAP),
-                    ActionOption(3, "Forcer le sas de décompression", Skill.LIFT_PUSH),
-                    ActionOption(4, "Surchauffer le terminal magitech", Skill.MAGIC)
+                    ActionOption(3, "Forcer le sas de décompression", Skill.LIFT_PUSH)
                 )
                 1 -> listOf(
                     ActionOption(1, "Attaquer la patrouille cyborg", Skill.COMBAT),
                     ActionOption(2, "Franchir la faille gravitationnelle", Skill.EXTREME_JUMP),
-                    ActionOption(3, "Escalader la structure de néons", Skill.CLIMB),
-                    ActionOption(4, "Persuader l'IA de sécurité", Skill.PERSUASION)
+                    ActionOption(3, "Escalader la structure de néons", Skill.CLIMB)
                 )
                 else -> listOf(
                     ActionOption(1, "Casser le champ de force", Skill.BREAK),
                     ActionOption(2, "Sort de surcharge énergétique", Skill.MAGIC),
-                    ActionOption(3, "Désactiver les tourelles laser", Skill.LOCK_TRAP),
-                    ActionOption(4, "Tir de précision à longue distance", Skill.SHOOT)
+                    ActionOption(3, "Désactiver les tourelles laser", Skill.LOCK_TRAP)
                 )
             }
         }
+
+        return baseOptions + itemOption
     }
 
     fun generateNarration(
@@ -106,14 +113,20 @@ class NarrativeEngine {
         val skillName = resolution.skill.displayName
         val statName = resolution.skill.attribute.displayName
 
-        val header = if (resolution.isSuccess) {
+        val header = if (option.isItemAction) {
+            "🎒 UTILISATION D'OBJET ! [${option.label}]\n(Objet '${option.itemName}' utilisé avec succès) ➔ L'épreuve est validée !"
+        } else if (resolution.isSuccess) {
             "🎲 RÉUSSITE ! [Action : ${option.label}] ($skillName - $statName)\n(Jet: ${resolution.diceRoll} <= Cible: ${resolution.targetValue})"
         } else {
             "🎲 ÉCHEC ! [Action : ${option.label}] ($skillName - $statName)\n(Jet: ${resolution.diceRoll} > Cible: ${resolution.targetValue}) ➔ -1 PV (${resolution.remainingHp}/${character.maxHp} PV restants)"
         }
 
         val body = if (resolution.isSuccess) {
-            val successOutcome = getSuccessText(universe, name, option.label, resolution.skill)
+            val successOutcome = if (option.isItemAction) {
+                "$name utilise avec succès '${option.itemName}' pour surmonter l'épreuve !"
+            } else {
+                getSuccessText(universe, name, option.label, resolution.skill)
+            }
             val nextChallenge = getNextChallengeDescription(universe, nextTurnCount)
             "$successOutcome\n\n📍 ÉPREUVE SUIVANTE :\n$nextChallenge"
         } else {

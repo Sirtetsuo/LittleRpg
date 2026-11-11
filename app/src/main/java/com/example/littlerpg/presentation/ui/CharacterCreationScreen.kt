@@ -37,9 +37,6 @@ import androidx.compose.ui.unit.sp
 import com.example.littlerpg.domain.model.UniverseType
 import com.example.littlerpg.ui.theme.LittleRpgTheme
 
-private const val BASE_STAT = 7
-private const val TOTAL_POOL = 10
-
 @Composable
 fun CharacterCreationScreen(
     selectedUniverse: UniverseType,
@@ -228,67 +225,6 @@ fun CharacterCreationScreen(
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold
             )
-        }
-    }
-}
-
-@Composable
-private fun AttributeStepper(
-    label: String,
-    bonusValue: Int,
-    canIncrement: Boolean,
-    onIncrement: () -> Unit,
-    onDecrement: () -> Unit
-) {
-    val totalValue = BASE_STAT + bonusValue
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(text = label, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                Text(
-                    text = "Base 7 (+ $bonusValue)",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
-            }
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedButton(
-                    onClick = onDecrement,
-                    enabled = bonusValue > 0,
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text("-", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                }
-
-                Text(
-                    text = "$totalValue",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    modifier = Modifier.padding(horizontal = 12.dp)
-                )
-
-                Button(
-                    onClick = onIncrement,
-                    enabled = canIncrement,
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text("+", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                }
-            }
         }
     }
 }

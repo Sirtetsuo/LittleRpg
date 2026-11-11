@@ -18,12 +18,21 @@ class ResolveActionUseCase(
         universe: UniverseType,
         character: Character,
         option: ActionOption,
+        currentOptions: List<ActionOption>,
         turnCount: Int = 0
     ): Quadruple {
-        val (resolution, updatedCharacter) = ruleEngine.resolve(skill = option.skill, character = character)
+        val (resolution, updatedCharacter) = ruleEngine.resolve(
+            skill = option.skill,
+            character = character,
+            isItemAction = option.isItemAction
+        )
         val narrativeText = narrativeEngine.generateNarration(universe, updatedCharacter, option, resolution, turnCount)
         val gmMessage = ChatMessage(isFromGameMaster = true, text = narrativeText)
-        val newOptions = narrativeEngine.generateActionOptions(universe, turnCount)
+        val newOptions = if (resolution.isSuccess) {
+            narrativeEngine.generateActionOptions(universe, turnCount, updatedCharacter)
+        } else {
+            currentOptions
+        }
 
         return Quadruple(resolution, updatedCharacter, gmMessage, newOptions)
     }

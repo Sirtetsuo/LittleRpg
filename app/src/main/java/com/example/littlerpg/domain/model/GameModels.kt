@@ -49,7 +49,9 @@ enum class Skill(val displayName: String, val attribute: Attribute) {
 data class ActionOption(
     val id: Int,
     val label: String,
-    val skill: Skill
+    val skill: Skill,
+    val isItemAction: Boolean = false,
+    val itemName: String? = null
 )
 
 data class Character(
@@ -62,7 +64,7 @@ data class Character(
     val hp: Int = 20,
     val maxHp: Int = 20,
     val level: Int = 1,
-    val inventory: List<String> = listOf("Épée d'aventurier", "Potion de soin", "Clé ancienne")
+    val inventory: List<String> = listOf("Une épée rouillée", "Une gourde", "Une potion de soin")
 ) {
     fun getAttributeValue(attribute: Attribute): Int {
         return when (attribute) {

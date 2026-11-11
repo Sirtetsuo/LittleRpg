@@ -15,11 +15,12 @@ class RuleEngine(private val random: Random = Random.Default) {
     fun resolve(
         skill: Skill,
         character: Character,
+        isItemAction: Boolean = false,
         forcedRoll: Int? = null
     ): Pair<ActionResolution, Character> {
-        val diceRoll = forcedRoll ?: rollD20()
+        val diceRoll = if (isItemAction) 1 else (forcedRoll ?: rollD20())
         val targetValue = character.getAttributeValue(skill.attribute)
-        val isSuccess = diceRoll <= targetValue
+        val isSuccess = if (isItemAction) true else (diceRoll <= targetValue)
         val hpLost = if (isSuccess) 0 else 1
         val newHp = max(0, character.hp - hpLost)
 

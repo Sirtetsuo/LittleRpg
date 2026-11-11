@@ -52,7 +52,7 @@ class GameViewModel(
         viewModelScope.launch {
             val savedData = loadGameUseCase()
             if (savedData != null) {
-                val initialOptions = narrativeEngine.generateActionOptions(savedData.universe, 0)
+                val initialOptions = narrativeEngine.generateActionOptions(savedData.universe, 0, savedData.character)
                 _uiState.update {
                     it.copy(
                         currentStep = ScreenStep.MainGame(savedData.universe, savedData.character),
@@ -100,7 +100,7 @@ class GameViewModel(
         val introMessageText = narrativeEngine.generateIntro(universe, character)
         val introMessage = ChatMessage(isFromGameMaster = true, text = introMessageText)
         val initialMessages = listOf(introMessage)
-        val initialOptions = narrativeEngine.generateActionOptions(universe, 0)
+        val initialOptions = narrativeEngine.generateActionOptions(universe, 0, character)
 
         _uiState.update {
             it.copy(
@@ -151,33 +151,73 @@ class GameViewModel(
         val option = state.selectedOption ?: return
 
         val playerMsg = ChatMessage(isFromGameMaster = false, text = "Action choisie : ${option.label}")
-        val nextTurn = state.turnCount + 1
+        val targetTurn = state.turnCount + 1
 
         val quadruple = resolveActionUseCase(
             universe = state.selectedUniverse,
             character = state.character,
             option = option,
-            turnCount = nextTurn
+            currentOptions = state.currentOptions,
+            turnCount = targetTurn
         )
 
         val updatedMessages = state.messages + playerMsg + quadruple.gmMessage
         val isDead = quadruple.updatedCharacter.hp <= 0
+        val isSuccess = quadruple.resolution.isSuccess
+        val newTurnCount = if (isSuccess) targetTurn else state.turnCount
 
         _uiState.update {
+            val nextStep = if (isDead) {
+                ScreenStep.GameOver
+            } else if (it.currentStep is ScreenStep.MainGame) {
+                ScreenStep.MainGame(state.selectedUniverse, quadruple.updatedCharacter)
+            } else {
+                it.currentStep
+            }
             it.copy(
                 character = quadruple.updatedCharacter,
                 messages = updatedMessages,
                 currentOptions = quadruple.nextOptions,
-                selectedOption = quadruple.nextOptions.firstOrNull(),
-                turnCount = nextTurn,
+                selectedOption = if (isSuccess) quadruple.nextOptions.firstOrNull() else option,
+                turnCount = newTurnCount,
                 lastResolution = quadruple.resolution,
-                currentStep = if (isDead) ScreenStep.GameOver else it.currentStep
+                currentStep = nextStep
             )
         }
 
         viewModelScope.launch {
             saveGameUseCase(quadruple.updatedCharacter, state.selectedUniverse, updatedMessages)
             _uiState.update { it.copy(hasSavedGame = true) }
+        }
+    }
+
+    fun onUpdateCharacterAttributes(strDelta: Int = 0, intDelta: Int = 0, agiDelta: Int = 0, hpDelta: Int = 0) {
+        val state = _uiState.value
+        val current = state.character
+        val newHp = (current.hp + hpDelta).coerceIn(0, current.maxHp)
+        val updatedChar = current.copy(
+            strength = (current.strength + strDelta).coerceAtLeast(1),
+            intelligence = (current.intelligence + intDelta).coerceAtLeast(1),
+            agility = (current.agility + agiDelta).coerceAtLeast(1),
+            hp = newHp
+        )
+
+        _uiState.update {
+            val nextStep = if (newHp <= 0) {
+                ScreenStep.GameOver
+            } else if (it.currentStep is ScreenStep.MainGame) {
+                ScreenStep.MainGame(state.selectedUniverse, updatedChar)
+            } else {
+                it.currentStep
+            }
+            it.copy(
+                character = updatedChar,
+                currentStep = nextStep
+            )
+        }
+
+        viewModelScope.launch {
+            saveGameUseCase(updatedChar, state.selectedUniverse, state.messages)
         }
     }
 

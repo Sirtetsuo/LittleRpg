@@ -65,7 +65,7 @@ fun AppNavigation(
                 is ScreenStep.MainGame -> {
                     MainGameScreen(
                         universe = step.universe,
-                        character = step.character,
+                        character = uiState.character,
                         messages = uiState.messages,
                         currentOptions = uiState.currentOptions,
                         selectedOption = uiState.selectedOption,
