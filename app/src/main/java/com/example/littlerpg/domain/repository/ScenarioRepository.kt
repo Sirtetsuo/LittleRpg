@@ -2,6 +2,7 @@ package com.example.littlerpg.domain.repository
 
 import com.example.littlerpg.domain.model.ClimaxEvent
 import com.example.littlerpg.domain.model.EventTag
+import com.example.littlerpg.domain.model.IntroTemplate
 import com.example.littlerpg.domain.model.ScenarioConclusion
 import com.example.littlerpg.domain.model.ScenarioOrientation
 import com.example.littlerpg.domain.model.StandardEvent
@@ -32,4 +33,9 @@ interface ScenarioRepository {
      * Récupère la conclusion narrative associée à l'orientation choisie en Phase 1.
      */
     suspend fun getLockedConclusion(orientation: ScenarioOrientation): ScenarioConclusion
+
+    /**
+     * Récupère un modèle d'introduction tiré dynamiquement de la base de données.
+     */
+    suspend fun getRandomIntroTemplate(universe: UniverseType): IntroTemplate
 }

@@ -51,8 +51,54 @@ data class ActionOption(
     val label: String,
     val skill: Skill,
     val isItemAction: Boolean = false,
-    val itemName: String? = null
+    val itemName: String? = null,
+    val orientation: ScenarioOrientation? = null
 )
+
+/**
+ * Modèle représentatif d'un objet de l'inventaire.
+ */
+data class GameItem(
+    val id: Int,
+    val name: String,
+    val effectDescription: String,
+    val isConsumable: Boolean = true
+) {
+    companion object {
+        val HEALING_POTION = GameItem(
+            id = 1,
+            name = "Potion de soin",
+            effectDescription = "+1d6 pv",
+            isConsumable = true
+        )
+        val WATER_FLASK = GameItem(
+            id = 2,
+            name = "Une gourde",
+            effectDescription = "Restaure 1 PV",
+            isConsumable = true
+        )
+        val RUSTY_SWORD = GameItem(
+            id = 3,
+            name = "Une épée rouillée",
+            effectDescription = "Équipement permanent (+1 Force)",
+            isConsumable = false
+        )
+
+        fun fromName(name: String): GameItem {
+            return when {
+                name.contains("potion", ignoreCase = true) -> HEALING_POTION
+                name.contains("gourde", ignoreCase = true) -> WATER_FLASK
+                name.contains("épée", ignoreCase = true) -> RUSTY_SWORD
+                else -> GameItem(
+                    id = name.hashCode(),
+                    name = name,
+                    effectDescription = "Effet spécial",
+                    isConsumable = true
+                )
+            }
+        }
+    }
+}
 
 data class Character(
     val name: String,

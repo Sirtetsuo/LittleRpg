@@ -88,4 +88,16 @@ class ScenarioEngineTest {
         assertTrue(finishedState is ScenarioState.Finished)
         assertTrue((finishedState as ScenarioState.Finished).isVictory)
     }
+
+    @Test
+    fun testNarrativeEngine_IntroOptionsMapToOrientations() {
+        val narrativeEngine = NarrativeEngine()
+        val introOptions = narrativeEngine.generateActionOptions(UniverseType.FANTASTIC, turnCount = 0)
+
+        assertEquals(4, introOptions.size)
+        assertEquals(ScenarioOrientation.BOUNTY_HUNT, introOptions[0].orientation)
+        assertEquals(ScenarioOrientation.TREASURE_HUNT, introOptions[1].orientation)
+        assertEquals(ScenarioOrientation.MYSTERY, introOptions[2].orientation)
+        assertEquals(ScenarioOrientation.NPC_ENCOUNTER, introOptions[3].orientation)
+    }
 }

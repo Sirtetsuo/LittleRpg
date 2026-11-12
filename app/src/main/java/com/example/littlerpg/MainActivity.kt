@@ -14,6 +14,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.littlerpg.data.db.GameDatabaseDataSource
 import com.example.littlerpg.data.db.GameDbHelper
 import com.example.littlerpg.data.repository.GameRepositoryImpl
+import com.example.littlerpg.data.repository.ScenarioRepositoryImpl
 import com.example.littlerpg.domain.engine.NarrativeEngine
 import com.example.littlerpg.domain.engine.RuleEngine
 import com.example.littlerpg.domain.usecase.ClearSavedGameUseCase
@@ -35,6 +36,7 @@ class MainActivity : ComponentActivity() {
         val dbHelper = GameDbHelper(applicationContext)
         val dataSource = GameDatabaseDataSource(dbHelper)
         val repository = GameRepositoryImpl(dataSource)
+        val scenarioRepository = ScenarioRepositoryImpl(dataSource)
 
         val ruleEngine = RuleEngine()
         val narrativeEngine = NarrativeEngine()
@@ -54,7 +56,8 @@ class MainActivity : ComponentActivity() {
                     saveGameUseCase = saveGameUseCase,
                     loadGameUseCase = loadGameUseCase,
                     hasSavedGameUseCase = hasSavedGameUseCase,
-                    clearSavedGameUseCase = clearSavedGameUseCase
+                    clearSavedGameUseCase = clearSavedGameUseCase,
+                    scenarioRepository = scenarioRepository
                 ) as T
             }
         }
@@ -80,6 +83,9 @@ class MainActivity : ComponentActivity() {
                         onSaveGameClicked = viewModel::onSaveGameClicked,
                         onOpenCharacterSheet = viewModel::onOpenCharacterSheet,
                         onCloseCharacterSheet = viewModel::onCloseCharacterSheet,
+                        onOpenItemSelectionDialog = viewModel::onOpenItemSelectionDialog,
+                        onCloseItemSelectionDialog = viewModel::onCloseItemSelectionDialog,
+                        onUseItem = viewModel::onUseItem,
                         onRestartAfterGameOver = viewModel::onRestartAfterGameOver,
                         onBackToMenuClicked = viewModel::onBackToMenu
                     )

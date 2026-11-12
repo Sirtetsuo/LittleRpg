@@ -45,11 +45,15 @@ fun MainGameScreen(
     selectedOption: ActionOption?,
     saveNotificationText: String?,
     showCharacterSheetDialog: Boolean = false,
+    showItemSelectionDialog: Boolean = false,
     onOptionSelect: (ActionOption) -> Unit,
     onExecuteActionClicked: () -> Unit,
     onSaveGameClicked: () -> Unit,
     onOpenCharacterSheet: () -> Unit = {},
     onCloseCharacterSheet: () -> Unit = {},
+    onOpenItemSelectionDialog: () -> Unit = {},
+    onCloseItemSelectionDialog: () -> Unit = {},
+    onUseItem: (String) -> Unit = {},
     onBackToMenuClicked: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -66,6 +70,16 @@ fun MainGameScreen(
             character = character,
             universe = universe,
             onDismiss = onCloseCharacterSheet
+        )
+    }
+
+    if (showItemSelectionDialog) {
+        ItemSelectionDialog(
+            inventory = character.inventory,
+            onItemSelect = { itemName ->
+                onUseItem(itemName)
+            },
+            onDismiss = onCloseItemSelectionDialog
         )
     }
 
@@ -133,8 +147,20 @@ fun MainGameScreen(
         ) {
             currentOptions.forEach { option ->
                 val isSelected = selectedOption?.id == option.id
+                val optionText = if (option.orientation != null || option.isItemAction) {
+                    option.label
+                } else {
+                    "${option.label} (${option.skill.displayName})"
+                }
                 Button(
-                    onClick = { onOptionSelect(option) },
+                    onClick = {
+                        onOptionSelect(option)
+                        if (option.isItemAction) {
+                            onOpenItemSelectionDialog()
+                        } else if (isSelected) {
+                            onExecuteActionClicked()
+                        }
+                    },
                     shape = RoundedCornerShape(10.dp),
                     colors = if (isSelected) {
                         ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
@@ -147,7 +173,7 @@ fun MainGameScreen(
                         .wrapContentHeight()
                 ) {
                     Text(
-                        text = "${option.label} (${option.skill.displayName})",
+                        text = optionText,
                         fontSize = 13.sp,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                         color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -160,21 +186,45 @@ fun MainGameScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Bouton Lancer (70% de la largeur de l'écran, centré)
-        Button(
-            onClick = onExecuteActionClicked,
-            enabled = selectedOption != null,
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier
-                .fillMaxWidth(0.70f)
-                .align(Alignment.CenterHorizontally)
-                .height(50.dp)
-        ) {
-            Text(
-                text = "Lancer",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
+        if (currentOptions.isEmpty()) {
+            Button(
+                onClick = onBackToMenuClicked,
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                modifier = Modifier
+                    .fillMaxWidth(0.80f)
+                    .align(Alignment.CenterHorizontally)
+                    .height(50.dp)
+            ) {
+                Text(
+                    text = "🏆 Victoire ! Retour au Menu",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        } else {
+            // Bouton Lancer (70% de la largeur de l'écran, centré)
+            Button(
+                onClick = {
+                    if (selectedOption?.isItemAction == true) {
+                        onOpenItemSelectionDialog()
+                    } else {
+                        onExecuteActionClicked()
+                    }
+                },
+                enabled = selectedOption != null,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth(0.70f)
+                    .align(Alignment.CenterHorizontally)
+                    .height(50.dp)
+            ) {
+                Text(
+                    text = "Lancer",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }

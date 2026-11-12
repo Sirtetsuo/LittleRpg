@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -41,16 +39,14 @@ fun UniverseScreen(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(12.dp)
+        modifier = modifier.fillMaxSize()
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 16.dp)
+                .padding(bottom = 12.dp)
         ) {
             OutlinedButton(
                 onClick = onBackClicked,
@@ -67,14 +63,19 @@ fun UniverseScreen(
             )
         }
 
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.fillMaxSize()
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(UniverseType.values()) { universe ->
+            UniverseType.entries.forEach { universe ->
                 UniverseCard(
                     universe = universe,
-                    onClick = { onUniverseSelected(universe) }
+                    onClick = { onUniverseSelected(universe) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
                 )
             }
         }
@@ -84,7 +85,8 @@ fun UniverseScreen(
 @Composable
 private fun UniverseCard(
     universe: UniverseType,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val imageRes = when (universe) {
         UniverseType.FANTASTIC -> R.drawable.dnd
@@ -93,7 +95,7 @@ private fun UniverseCard(
     }
 
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
@@ -104,7 +106,7 @@ private fun UniverseCard(
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -117,7 +119,10 @@ private fun UniverseCard(
                     .clip(RoundedCornerShape(12.dp))
             )
             Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.Center
+            ) {
                 Text(
                     text = universe.displayName,
                     fontSize = 20.sp,

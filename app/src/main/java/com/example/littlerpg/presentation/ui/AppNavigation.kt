@@ -23,6 +23,9 @@ fun AppNavigation(
     onSaveGameClicked: () -> Unit,
     onOpenCharacterSheet: () -> Unit,
     onCloseCharacterSheet: () -> Unit,
+    onOpenItemSelectionDialog: () -> Unit = {},
+    onCloseItemSelectionDialog: () -> Unit = {},
+    onUseItem: (String) -> Unit = {},
     onRestartAfterGameOver: () -> Unit,
     onBackToMenuClicked: () -> Unit,
     modifier: Modifier = Modifier
@@ -71,11 +74,15 @@ fun AppNavigation(
                         selectedOption = uiState.selectedOption,
                         saveNotificationText = uiState.saveNotificationText,
                         showCharacterSheetDialog = uiState.showCharacterSheetDialog,
+                        showItemSelectionDialog = uiState.showItemSelectionDialog,
                         onOptionSelect = onOptionSelect,
                         onExecuteActionClicked = onExecuteActionClicked,
                         onSaveGameClicked = onSaveGameClicked,
                         onOpenCharacterSheet = onOpenCharacterSheet,
                         onCloseCharacterSheet = onCloseCharacterSheet,
+                        onOpenItemSelectionDialog = onOpenItemSelectionDialog,
+                        onCloseItemSelectionDialog = onCloseItemSelectionDialog,
+                        onUseItem = onUseItem,
                         onBackToMenuClicked = onBackToMenuClicked
                     )
                 }

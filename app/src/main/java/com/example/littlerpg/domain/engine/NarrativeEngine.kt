@@ -3,28 +3,28 @@ package com.example.littlerpg.domain.engine
 import com.example.littlerpg.domain.model.ActionOption
 import com.example.littlerpg.domain.model.ActionResolution
 import com.example.littlerpg.domain.model.Character
+import com.example.littlerpg.domain.model.IntroTemplate
+import com.example.littlerpg.domain.model.ScenarioOrientation
 import com.example.littlerpg.domain.model.Skill
+import com.example.littlerpg.domain.model.StandardEvent
 import com.example.littlerpg.domain.model.UniverseType
 
 class NarrativeEngine {
 
-    fun generateIntro(universe: UniverseType, character: Character): String {
+    fun generateIntro(universe: UniverseType, character: Character, template: IntroTemplate? = null): String {
         val name = character.nickname.ifBlank { character.name }
+        if (template != null) {
+            return template.buildIntroMessage(name)
+        }
         return when (universe) {
             UniverseType.FANTASTIC -> {
-                "Bienvenue, brave $name. Vous vous tenez devant la lourde porte verrouillée d'une ancienne cité oubliée. " +
-                        "La brume rampe sur les pavés humides, et un souffle glacé résonne derrière le bois renforcé. " +
-                        "Vous avez ${character.hp} PV. Choisissez votre action !"
+                "Bienvenue, brave $name. Vous êtes dans une taverne bruyante, où les aventuriers racontent leurs exploits autour de choppes de chouchen. Vous avez plein d'opportunités. Que voulez-vous faire ?"
             }
             UniverseType.CONTEMPORARY -> {
-                "Pluie battante sur les vitres. $name, la cible vient d'entrer dans un entrepôt hautement sécurisé. " +
-                        "La porte blindée d'accès est fermée et un lecteur de badge clignote en rouge. " +
-                        "Santé : ${character.hp} PV. Quelle est votre décision ?"
+                "Bienvenue, brave $name. Vous êtes dans un entrepôt portuaire, rempli de conteneurs suspects sous la pluie battante. Vous avez plein d'opportunités. Que voulez-vous faire ?"
             }
             UniverseType.FUTURISTIC -> {
-                "Secteur 7, Néo-Métropole. Le sas de sécurité de la tour корпоратив bloque votre progression. " +
-                        "Des étincelles fusent de la console et des drones de patrouille approchent. " +
-                        "Intégrité : ${character.hp} PV. Sélectionnez votre protocole d'action !"
+                "Bienvenue, brave $name. Vous êtes dans une station spatiale franche, où se croisent cyber-mercenaires et contrebandiers de la galaxie. Vous avez plein d'opportunités. Que voulez-vous faire ?"
             }
         }
     }
@@ -32,11 +32,26 @@ class NarrativeEngine {
     fun generateActionOptions(
         universe: UniverseType,
         turnCount: Int = 0,
-        character: Character? = null
+        character: Character? = null,
+        currentEvent: StandardEvent? = null
     ): List<ActionOption> {
-        val setIndex = turnCount % 3
+        if (turnCount == 0) {
+            return listOf(
+                ActionOption(1, "⚔️ Tuer un monstre", Skill.COMBAT, orientation = ScenarioOrientation.BOUNTY_HUNT),
+                ActionOption(2, "💎 Trouver un grand trésor", Skill.LOCK_TRAP, orientation = ScenarioOrientation.TREASURE_HUNT),
+                ActionOption(3, "🧩 Résoudre une énigme", Skill.MAGIC, orientation = ScenarioOrientation.MYSTERY),
+                ActionOption(4, "🎭 Rencontrer un personnage haut en couleur", Skill.PERSUASION, orientation = ScenarioOrientation.NPC_ENCOUNTER)
+            )
+        }
+
         val inventory = character?.inventory?.ifEmpty { null } ?: listOf("Une épée rouillée", "Une gourde", "Une potion de soin")
         val selectedItem = inventory[turnCount % inventory.size]
+
+        if (currentEvent != null) {
+            return currentEvent.toActionOptions(selectedItem)
+        }
+
+        val setIndex = (turnCount - 1) % 3
         val itemOption = ActionOption(
             id = 4,
             label = "Utiliser un objet : $selectedItem",
@@ -141,7 +156,7 @@ class NarrativeEngine {
         return "$header\n\n$body$gameOverWarning"
     }
 
-    private fun getNextChallengeDescription(universe: UniverseType, turnCount: Int): String {
+    fun getNextChallengeDescription(universe: UniverseType, turnCount: Int): String {
         val setIndex = turnCount % 3
         return when (universe) {
             UniverseType.FANTASTIC -> when (setIndex) {

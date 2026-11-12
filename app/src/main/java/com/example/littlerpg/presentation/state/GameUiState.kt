@@ -4,6 +4,9 @@ import com.example.littlerpg.domain.model.ActionOption
 import com.example.littlerpg.domain.model.ActionResolution
 import com.example.littlerpg.domain.model.Character
 import com.example.littlerpg.domain.model.ChatMessage
+import com.example.littlerpg.domain.model.EventTag
+import com.example.littlerpg.domain.model.ScenarioOrientation
+import com.example.littlerpg.domain.model.StandardEvent
 import com.example.littlerpg.domain.model.UniverseType
 
 sealed interface ScreenStep {
@@ -22,9 +25,13 @@ data class GameUiState(
     val messages: List<ChatMessage> = emptyList(),
     val currentOptions: List<ActionOption> = emptyList(),
     val selectedOption: ActionOption? = null,
+    val selectedOrientation: ScenarioOrientation? = null,
+    val currentTag: EventTag? = null,
+    val currentEvent: StandardEvent? = null,
     val turnCount: Int = 0,
     val isRolling: Boolean = false,
     val lastResolution: ActionResolution? = null,
     val saveNotificationText: String? = null,
-    val showCharacterSheetDialog: Boolean = false
+    val showCharacterSheetDialog: Boolean = false,
+    val showItemSelectionDialog: Boolean = false
 )
