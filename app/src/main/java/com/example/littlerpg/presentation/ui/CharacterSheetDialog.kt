@@ -92,20 +92,36 @@ fun CharacterSheetDialog(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     Column(modifier = Modifier.padding(10.dp)) {
-                        Text(
-                            text = "❤️ Points de Vie : ${character.hp} / ${character.maxHp}",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp,
-                            color = if (character.hp <= 5) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-                        )
+                        val maxHp = character.getEffectiveMaxHp()
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "❤️ Points de Vie : ${character.hp} / $maxHp",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = if (character.hp <= 5) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "🪙 ${character.gold} PO",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.tertiary
+                            )
+                        }
                         Spacer(modifier = Modifier.height(6.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("💪 FOR: ${character.strength}", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                            Text("🧠 INT: ${character.intelligence}", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                            Text("⚡ AGI: ${character.agility}", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                            val effStr = character.getEffectiveAttributeValue(com.example.littlerpg.domain.model.Attribute.STRENGTH)
+                            val effInt = character.getEffectiveAttributeValue(com.example.littlerpg.domain.model.Attribute.INTELLIGENCE)
+                            val effAgi = character.getEffectiveAttributeValue(com.example.littlerpg.domain.model.Attribute.AGILITY)
+                            Text("💪 FOR: $effStr", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                            Text("🧠 INT: $effInt", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                            Text("⚡ AGI: $effAgi", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
@@ -118,7 +134,7 @@ fun CharacterSheetDialog(
                 ) {
                     Column(modifier = Modifier.padding(10.dp)) {
                         Text(
-                            text = "🎒 Objets récupérés :",
+                            text = "🎒 Objets dans l'inventaire :",
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -126,14 +142,15 @@ fun CharacterSheetDialog(
                         Spacer(modifier = Modifier.height(4.dp))
                         if (character.inventory.isEmpty()) {
                             Text(
-                                text = "Aucun objet récupéré pour le moment.",
+                                text = "Aucun objet dans l'inventaire.",
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                             )
                         } else {
-                            character.inventory.forEach { item ->
+                            character.inventory.forEach { itemName ->
+                                val item = com.example.littlerpg.domain.model.GameItem.fromName(itemName)
                                 Text(
-                                    text = "• $item",
+                                    text = "• ${item.name} (${item.effectDescription}) [${if (item.isConsumable) "Consommable" else "Équipé"}]",
                                     fontSize = 12.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

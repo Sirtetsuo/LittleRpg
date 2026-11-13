@@ -56,40 +56,91 @@ data class ActionOption(
 )
 
 /**
+ * Types d'effets standardisés pour les objets du jeu.
+ */
+sealed interface ItemEffect {
+    data class Heal(val dice: Boolean = false, val amount: Int = 0) : ItemEffect
+    data class TempBoost(val attribute: Attribute, val amount: Int = 3) : ItemEffect
+    data class AutoSuccess(val attribute: Attribute) : ItemEffect
+    data class PermanentBonus(
+        val strBonus: Int = 0,
+        val intBonus: Int = 0,
+        val agiBonus: Int = 0,
+        val hpBonus: Int = 0
+    ) : ItemEffect
+}
+
+/**
  * Modèle représentatif d'un objet de l'inventaire.
  */
 data class GameItem(
     val id: Int,
     val name: String,
     val effectDescription: String,
-    val isConsumable: Boolean = true
+    val isConsumable: Boolean = true,
+    val universe: UniverseType = UniverseType.FANTASTIC
 ) {
+    val cost: Int
+        get() = if (isConsumable) 80 else 250
+
+    val parsedEffect: ItemEffect
+        get() = parseEffect(effectDescription, isConsumable)
+
     companion object {
-        val HEALING_POTION = GameItem(
-            id = 1,
-            name = "Potion de soin",
-            effectDescription = "+1d6 pv",
-            isConsumable = true
-        )
-        val WATER_FLASK = GameItem(
-            id = 2,
-            name = "Une gourde",
-            effectDescription = "Restaure 1 PV",
-            isConsumable = true
-        )
-        val RUSTY_SWORD = GameItem(
-            id = 3,
-            name = "Une épée rouillée",
-            effectDescription = "Équipement permanent (+1 Force)",
-            isConsumable = false
-        )
+        fun parseEffect(effectText: String, isConsumable: Boolean): ItemEffect {
+            val text = effectText.trim()
+            return when {
+                text.contains("1d6", ignoreCase = true) -> ItemEffect.Heal(dice = true)
+                text == "AUTO_FOR" -> ItemEffect.AutoSuccess(Attribute.STRENGTH)
+                text == "AUTO_INT" -> ItemEffect.AutoSuccess(Attribute.INTELLIGENCE)
+                text == "AUTO_AGI" -> ItemEffect.AutoSuccess(Attribute.AGILITY)
+                text.contains("(1 tour)", ignoreCase = true) -> {
+                    when {
+                        text.contains("FOR") -> ItemEffect.TempBoost(Attribute.STRENGTH, 3)
+                        text.contains("INT") -> ItemEffect.TempBoost(Attribute.INTELLIGENCE, 3)
+                        text.contains("AGI") -> ItemEffect.TempBoost(Attribute.AGILITY, 3)
+                        else -> ItemEffect.TempBoost(Attribute.STRENGTH, 3)
+                    }
+                }
+                text.contains("+1 FOR, +1 INT, +1 AGI") || (text.contains("FOR") && text.contains("INT") && text.contains("AGI")) -> {
+                    ItemEffect.PermanentBonus(strBonus = 1, intBonus = 1, agiBonus = 1)
+                }
+                !isConsumable -> {
+                    var str = 0
+                    var intV = 0
+                    var agi = 0
+                    var hp = 0
+                    val parts = text.split(",")
+                    for (p in parts) {
+                        val pt = p.trim()
+                        val num = Regex("""\+(\d+)""").find(pt)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+                        when {
+                            pt.contains("FOR") -> str += num
+                            pt.contains("INT") -> intV += num
+                            pt.contains("AGI") -> agi += num
+                            pt.contains("PV") -> hp += num
+                        }
+                    }
+                    ItemEffect.PermanentBonus(strBonus = str, intBonus = intV, agiBonus = agi, hpBonus = hp)
+                }
+                text.contains("PV") -> {
+                    val amount = Regex("""\+(\d+)""").find(text)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+                    ItemEffect.Heal(amount = amount)
+                }
+                else -> ItemEffect.Heal(amount = 0)
+            }
+        }
 
         fun fromName(name: String): GameItem {
+            val trimmed = name.trim()
             return when {
-                name.contains("potion", ignoreCase = true) -> HEALING_POTION
-                name.contains("gourde", ignoreCase = true) -> WATER_FLASK
-                name.contains("épée", ignoreCase = true) -> RUSTY_SWORD
-                else -> GameItem(
+                trimmed.equals("Épée rouillée", ignoreCase = true) || trimmed.contains("épée rouillée", ignoreCase = true) ->
+                    GameItem(0, "Épée rouillée", "Arme de départ (aucun bonus)", isConsumable = false, universe = UniverseType.FANTASTIC)
+                trimmed.equals("Pistolet", ignoreCase = true) ->
+                    GameItem(1000, "Pistolet", "Arme de départ (aucun bonus)", isConsumable = false, universe = UniverseType.CONTEMPORARY)
+                trimmed.equals("Blaster", ignoreCase = true) ->
+                    GameItem(2000, "Blaster", "Arme de départ (aucun bonus)", isConsumable = false, universe = UniverseType.FUTURISTIC)
+                else -> GameItemCatalog.getItemByName(name) ?: GameItem(
                     id = name.hashCode(),
                     name = name,
                     effectDescription = "Effet spécial",
@@ -99,6 +150,8 @@ data class GameItem(
         }
     }
 }
+
+
 
 data class Character(
     val name: String,
@@ -110,7 +163,9 @@ data class Character(
     val hp: Int = 20,
     val maxHp: Int = 20,
     val level: Int = 1,
-    val inventory: List<String> = listOf("Une épée rouillée", "Une gourde", "Une potion de soin")
+    val inventory: List<String> = listOf("Épée rouillée"),
+    val gold: Int = 100,
+    val temporaryBoosts: Map<Attribute, Int> = emptyMap()
 ) {
     fun getAttributeValue(attribute: Attribute): Int {
         return when (attribute) {
@@ -118,6 +173,47 @@ data class Character(
             Attribute.INTELLIGENCE -> intelligence
             Attribute.AGILITY -> agility
         }
+    }
+
+    fun getPermanentItemBonus(attribute: Attribute): Int {
+        var bonus = 0
+        for (itemName in inventory) {
+            val item = GameItem.fromName(itemName)
+            if (!item.isConsumable) {
+                val effect = item.parsedEffect
+                if (effect is ItemEffect.PermanentBonus) {
+                    bonus += when (attribute) {
+                        Attribute.STRENGTH -> effect.strBonus
+                        Attribute.INTELLIGENCE -> effect.intBonus
+                        Attribute.AGILITY -> effect.agiBonus
+                    }
+                }
+            }
+        }
+        return bonus
+    }
+
+    fun getPermanentHpBonus(): Int {
+        var hpBonus = 0
+        for (itemName in inventory) {
+            val item = GameItem.fromName(itemName)
+            if (!item.isConsumable) {
+                val effect = item.parsedEffect
+                if (effect is ItemEffect.PermanentBonus) {
+                    hpBonus += effect.hpBonus
+                }
+            }
+        }
+        return hpBonus
+    }
+
+    fun getEffectiveMaxHp(): Int = maxHp + getPermanentHpBonus()
+
+    fun getEffectiveAttributeValue(attribute: Attribute): Int {
+        val base = getAttributeValue(attribute)
+        val perm = getPermanentItemBonus(attribute)
+        val temp = temporaryBoosts[attribute] ?: 0
+        return base + perm + temp
     }
 }
 
@@ -136,3 +232,4 @@ data class ChatMessage(
     val text: String,
     val timestamp: Long = System.currentTimeMillis()
 )
+

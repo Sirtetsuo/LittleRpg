@@ -44,7 +44,11 @@ class NarrativeEngine {
             )
         }
 
-        val inventory = character?.inventory?.ifEmpty { null } ?: listOf("Une épée rouillée", "Une gourde", "Une potion de soin")
+        val inventory = character?.inventory?.ifEmpty { null } ?: when (universe) {
+            UniverseType.FANTASTIC -> listOf("Épée rouillée")
+            UniverseType.CONTEMPORARY -> listOf("Pistolet")
+            UniverseType.FUTURISTIC -> listOf("Blaster")
+        }
         val selectedItem = inventory[turnCount % inventory.size]
 
         if (currentEvent != null) {
@@ -127,13 +131,15 @@ class NarrativeEngine {
         val name = character.nickname.ifBlank { character.name }
         val skillName = resolution.skill.displayName
         val statName = resolution.skill.attribute.displayName
+        val maxHp = character.getEffectiveMaxHp()
+        val hpLost = if (resolution.hpLost > 0) resolution.hpLost else 1
 
         val header = if (option.isItemAction) {
             "🎒 UTILISATION D'OBJET ! [${option.label}]\n(Objet '${option.itemName}' utilisé avec succès) ➔ L'épreuve est validée !"
         } else if (resolution.isSuccess) {
             "🎲 RÉUSSITE ! [Action : ${option.label}] ($skillName - $statName)\n(Jet: ${resolution.diceRoll} <= Cible: ${resolution.targetValue})"
         } else {
-            "🎲 ÉCHEC ! [Action : ${option.label}] ($skillName - $statName)\n(Jet: ${resolution.diceRoll} > Cible: ${resolution.targetValue}) ➔ -1 PV (${resolution.remainingHp}/${character.maxHp} PV restants)"
+            "🎲 ÉCHEC ! [Action : ${option.label}] ($skillName - $statName)\n(Jet: ${resolution.diceRoll} > Cible: ${resolution.targetValue}) ➔ -$hpLost PV (${resolution.remainingHp}/$maxHp PV restants)"
         }
 
         val body = if (resolution.isSuccess) {
@@ -145,7 +151,7 @@ class NarrativeEngine {
             val nextChallenge = getNextChallengeDescription(universe, nextTurnCount)
             "$successOutcome\n\n📍 ÉPREUVE SUIVANTE :\n$nextChallenge"
         } else {
-            val failureOutcome = getFailureText(universe, name, option.label, resolution.skill)
+            val failureOutcome = getFailureText(universe, name, option.label, resolution.skill, hpLost)
             "$failureOutcome\n\n⚠️ L'épreuve est toujours active ! Retentez votre chance ou adaptez votre stratégie."
         }
 
@@ -185,11 +191,12 @@ class NarrativeEngine {
         }
     }
 
-    private fun getFailureText(universe: UniverseType, name: String, actionLabel: String, skill: Skill): String {
+    private fun getFailureText(universe: UniverseType, name: String, actionLabel: String, skill: Skill, hpLost: Int = 1): String {
+        val lossText = "-$hpLost PV"
         return when (universe) {
-            UniverseType.FANTASTIC -> "Échec lors de la tentative de ${skill.displayName}. $name rate '$actionLabel' et encaisse un coup dur (-1 PV)."
-            UniverseType.CONTEMPORARY -> "Fausse manœuvre ! L'action '$actionLabel' avec ${skill.displayName} échoue face à la résistance (-1 PV)."
-            UniverseType.FUTURISTIC -> "Erreur système lors de '${skill.displayName}'. L'opération '$actionLabel' échoue et cause des dégâts (-1 PV)."
+            UniverseType.FANTASTIC -> "Échec lors de la tentative de ${skill.displayName}. $name rate '$actionLabel' et encaisse un coup dur ($lossText)."
+            UniverseType.CONTEMPORARY -> "Fausse manœuvre ! L'action '$actionLabel' avec ${skill.displayName} échoue face à la résistance ($lossText)."
+            UniverseType.FUTURISTIC -> "Erreur système lors de '${skill.displayName}'. L'opération '$actionLabel' échoue et cause des dégâts ($lossText)."
         }
     }
 }

@@ -16,15 +16,22 @@ class RuleEngine(private val random: Random = Random.Default) {
         skill: Skill,
         character: Character,
         isItemAction: Boolean = false,
-        forcedRoll: Int? = null
+        forcedRoll: Int? = null,
+        isAutoSuccess: Boolean = false,
+        hpLostOnFailure: Int = 1
     ): Pair<ActionResolution, Character> {
-        val diceRoll = if (isItemAction) 1 else (forcedRoll ?: rollD20())
-        val targetValue = character.getAttributeValue(skill.attribute)
-        val isSuccess = if (isItemAction) true else (diceRoll <= targetValue)
-        val hpLost = if (isSuccess) 0 else 1
+        val auto = isItemAction || isAutoSuccess
+        val diceRoll = if (auto) 1 else (forcedRoll ?: rollD20())
+        val targetValue = character.getEffectiveAttributeValue(skill.attribute)
+        val isSuccess = if (auto) true else (diceRoll <= targetValue)
+        val hpLost = if (isSuccess) 0 else hpLostOnFailure
         val newHp = max(0, character.hp - hpLost)
 
-        val updatedCharacter = character.copy(hp = newHp)
+        val updatedCharacter = character.copy(
+            hp = newHp,
+            temporaryBoosts = emptyMap()
+        )
+
         val resolution = ActionResolution(
             diceRoll = diceRoll,
             targetValue = targetValue,

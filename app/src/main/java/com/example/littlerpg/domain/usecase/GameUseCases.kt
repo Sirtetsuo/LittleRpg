@@ -19,12 +19,14 @@ class ResolveActionUseCase(
         character: Character,
         option: ActionOption,
         currentOptions: List<ActionOption>,
-        turnCount: Int = 0
+        turnCount: Int = 0,
+        hpLostOnFailure: Int = 1
     ): Quadruple {
         val (resolution, updatedCharacter) = ruleEngine.resolve(
             skill = option.skill,
             character = character,
-            isItemAction = option.isItemAction
+            isItemAction = option.isItemAction,
+            hpLostOnFailure = hpLostOnFailure
         )
         val narrativeText = narrativeEngine.generateNarration(universe, updatedCharacter, option, resolution, turnCount)
         val gmMessage = ChatMessage(isFromGameMaster = true, text = narrativeText)
