@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 const val BASE_STAT = 7
-const val TOTAL_POOL = 10
+const val TOTAL_POOL = 5
 
 @Composable
 fun AttributeStepper(

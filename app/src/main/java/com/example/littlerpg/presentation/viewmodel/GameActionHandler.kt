@@ -8,8 +8,10 @@ import com.example.littlerpg.domain.model.ActionResolution
 import com.example.littlerpg.domain.model.Character
 import com.example.littlerpg.domain.model.EventTag
 import com.example.littlerpg.domain.model.GameItem
+import com.example.littlerpg.domain.model.GameItemCatalog
 import com.example.littlerpg.domain.model.ItemEffect
 import com.example.littlerpg.domain.model.ScenarioOrientation
+import com.example.littlerpg.domain.model.Skill
 import com.example.littlerpg.domain.model.StandardEvent
 import com.example.littlerpg.domain.model.UniverseType
 import com.example.littlerpg.domain.repository.ScenarioRepository
@@ -65,7 +67,7 @@ class GameActionHandler(
 
         val newGold = character.gold - itemCost
         val updatedInventory = character.inventory + boughtItemName
-        var updatedChar = character.copy(inventory = updatedInventory, gold = newGold)
+        val updatedChar = character.copy(inventory = updatedInventory, gold = newGold)
 
         val nextOptionsForTurn: List<ActionOption>
         var drawnTag: EventTag? = currentTag
@@ -92,11 +94,16 @@ class GameActionHandler(
                     "Vous obtenez '$boughtItemName' (${itemToBuy.effectDescription}) pour $itemCost PO ! (Solde restant : $newGold PO).\n\n" +
                     "🔥 CLIMAX FINAL — ${climax.title} !\n${climax.description}\nAdversaire ultime : ${climax.finalBossName}"
         } else {
-            val orientation = selectedOrientation ?: ScenarioOrientation.BOUNTY_HUNT
-            val victoryRes = victoryHandler.createVictoryState(updatedChar, orientation)
-            updatedChar = victoryRes.victoriousCharacter
-            nextOptionsForTurn = victoryRes.rewardOptions
-            "🛍️ OBJET ACQUIS !\n\n" + victoryRes.gmMessageText
+            val catalogItems = GameItemCatalog.getItemsForUniverse(universe).shuffled().take(3)
+            nextOptionsForTurn = listOf(
+                ActionOption(201, "Acheter : ${catalogItems[0].name} (${catalogItems[0].cost} PO)", Skill.MAGIC),
+                ActionOption(202, "Acheter : ${catalogItems[1].name} (${catalogItems[1].cost} PO)", Skill.PERSUASION),
+                ActionOption(203, "Acheter : ${catalogItems[2].name} (${catalogItems[2].cost} PO)", Skill.LOCK_TRAP),
+                ActionOption(99, "🔄 Continuer l'aventure (Niveau ${updatedChar.level})", Skill.PERSUASION)
+            )
+            "🛍️ OBJET ACQUIS AU MARCHÉ DE NIVEAU !\n" +
+                    "Vous obtenez l'objet '$boughtItemName' (${itemToBuy.effectDescription}) pour $itemCost PO ! (Solde restant : $newGold PO).\n\n" +
+                    "Vous pouvez effectuer un autre achat ci-dessous ou cliquer sur 'Continuer l'aventure' pour démarrer la quête de Niveau ${updatedChar.level} !"
         }
 
         return MerchantResult.Success(

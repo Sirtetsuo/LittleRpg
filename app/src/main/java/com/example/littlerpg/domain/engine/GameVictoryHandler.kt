@@ -2,8 +2,10 @@ package com.example.littlerpg.domain.engine
 
 import com.example.littlerpg.domain.model.ActionOption
 import com.example.littlerpg.domain.model.Character
+import com.example.littlerpg.domain.model.GameItemCatalog
 import com.example.littlerpg.domain.model.ScenarioOrientation
 import com.example.littlerpg.domain.model.Skill
+import com.example.littlerpg.domain.model.UniverseType
 import com.example.littlerpg.domain.repository.ScenarioRepository
 
 data class VictoryResult(
@@ -57,7 +59,7 @@ class GameVictoryHandler(private val scenarioRepository: ScenarioRepository) {
         )
     }
 
-    fun applyAttributeUpgrade(optionId: Int, character: Character): Pair<Character, String> {
+    fun applyAttributeUpgrade(optionId: Int, character: Character, universe: UniverseType): Triple<Character, String, List<ActionOption>> {
         val updatedChar = when (optionId) {
             101 -> character.copy(strength = character.strength + 1)
             102 -> character.copy(intelligence = character.intelligence + 1)
@@ -78,10 +80,30 @@ class GameVictoryHandler(private val scenarioRepository: ScenarioRepository) {
             else -> "Bonus d'attribut"
         }
 
+        val catalogItems = GameItemCatalog.getItemsForUniverse(universe).shuffled().take(3)
+        val merchantOptions = listOf(
+            ActionOption(201, "Acheter : ${catalogItems[0].name} (${catalogItems[0].cost} PO)", Skill.MAGIC),
+            ActionOption(202, "Acheter : ${catalogItems[1].name} (${catalogItems[1].cost} PO)", Skill.PERSUASION),
+            ActionOption(203, "Acheter : ${catalogItems[2].name} (${catalogItems[2].cost} PO)", Skill.LOCK_TRAP),
+            ActionOption(99, "🔄 Continuer l'aventure (Niveau ${updatedChar.level})", Skill.PERSUASION)
+        )
+
+        val merchantTitle = when (universe) {
+            UniverseType.FANTASTIC -> "🏪 MARCHAND DE PASSAGE DE NIVEAU — L'Étal du Voyageur"
+            UniverseType.CONTEMPORARY -> "🏪 MARCHAND DE PASSAGE DE NIVEAU — L'Armurerie Clandestine"
+            UniverseType.FUTURISTIC -> "🏪 MARCHAND DE PASSAGE DE NIVEAU — Le Terminal Commercial Cyber"
+        }
+
         val gmMsgText = "⭐ AMÉLIORATION ACQUISE !\n" +
                 "Vous obtenez : $bonusDetail !\n\n" +
-                "Cliquez sur 'Continuer l'aventure' pour débuter la quête de Niveau ${updatedChar.level}."
+                "----------------------------------------\n" +
+                "$merchantTitle\n" +
+                "Un marchand spécial vous accueille suite à vos récents exploits ! Il vous propose ses marchandises (Solde disponible : ${updatedChar.gold} PO) :\n" +
+                "1. ${catalogItems[0].name} — ${catalogItems[0].effectDescription} (${catalogItems[0].cost} PO)\n" +
+                "2. ${catalogItems[1].name} — ${catalogItems[1].effectDescription} (${catalogItems[1].cost} PO)\n" +
+                "3. ${catalogItems[2].name} — ${catalogItems[2].effectDescription} (${catalogItems[2].cost} PO)\n\n" +
+                "Choisissez un objet à acheter ou continuez l'aventure !"
 
-        return Pair(updatedChar, gmMsgText)
+        return Triple(updatedChar, gmMsgText, merchantOptions)
     }
 }

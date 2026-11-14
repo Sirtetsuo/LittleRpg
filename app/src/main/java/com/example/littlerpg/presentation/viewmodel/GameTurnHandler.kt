@@ -7,7 +7,6 @@ import com.example.littlerpg.domain.model.ActionOption
 import com.example.littlerpg.domain.model.ChatMessage
 import com.example.littlerpg.domain.model.EventTag
 import com.example.littlerpg.domain.model.ScenarioOrientation
-import com.example.littlerpg.domain.model.Skill
 import com.example.littlerpg.domain.repository.ScenarioRepository
 import com.example.littlerpg.presentation.state.GameUiState
 import com.example.littlerpg.presentation.state.ScreenStep
@@ -25,22 +24,15 @@ class GameTurnHandler(
         val playerMsg = ChatMessage(isFromGameMaster = false, text = "Action choisie : ${option.label}")
 
         if (option.id in 101..104) {
-            val upgradeRes = victoryHandler.applyAttributeUpgrade(option.id, state.character)
+            val upgradeRes = victoryHandler.applyAttributeUpgrade(option.id, state.character, state.selectedUniverse)
             val gmMsg = ChatMessage(isFromGameMaster = true, text = upgradeRes.second)
             val updatedMessages = state.messages + playerMsg + gmMsg
-
-            val continueOption = ActionOption(
-                id = 99,
-                label = "🔄 Continuer l'aventure (Niveau ${upgradeRes.first.level})",
-                skill = Skill.PERSUASION
-            )
-            val nextOptions = listOf(continueOption)
 
             return state.copy(
                 character = upgradeRes.first,
                 messages = updatedMessages,
-                currentOptions = nextOptions,
-                selectedOption = nextOptions.firstOrNull()
+                currentOptions = upgradeRes.third,
+                selectedOption = upgradeRes.third.firstOrNull()
             )
         }
 
