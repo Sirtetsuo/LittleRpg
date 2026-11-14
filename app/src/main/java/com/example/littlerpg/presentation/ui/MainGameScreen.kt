@@ -123,8 +123,6 @@ fun MainGameScreen(
                         onOptionSelect(option)
                         if (option.isItemAction) {
                             onOpenItemSelectionDialog()
-                        } else if (isSelected) {
-                            onExecuteActionClicked()
                         }
                     },
                     shape = RoundedCornerShape(10.dp),
