@@ -7,6 +7,7 @@ import com.example.littlerpg.domain.model.ActionOption
 import com.example.littlerpg.domain.model.ChatMessage
 import com.example.littlerpg.domain.model.EventTag
 import com.example.littlerpg.domain.model.ScenarioOrientation
+import com.example.littlerpg.domain.model.StandardEvent
 import com.example.littlerpg.domain.repository.ScenarioRepository
 import com.example.littlerpg.presentation.state.GameUiState
 import com.example.littlerpg.presentation.state.ScreenStep
@@ -72,21 +73,16 @@ class GameTurnHandler(
                 orientation = orientation
             )
             val firstEvent = scenarioRepository.getStandardEventByTag(state.selectedUniverse, firstTag)
-            val challengeTitle = firstEvent.title
-            val challengeDesc = firstEvent.description
-
             val gmText = "🎯 VOIE SCELLÉE : ${orientation.displayName} (${orientation.actionText})\n\n" +
-                    "📍 ÉPREUVE 1/$totalEvents — $challengeTitle :\n$challengeDesc"
+                    "📍 ÉPREUVE 1/$totalEvents — ${firstEvent.title} :\n${firstEvent.description}"
             val gmMsg = ChatMessage(isFromGameMaster = true, text = gmText)
-
             val turn1Options = firstEvent.toActionOptions(state.character.inventory.firstOrNull())
-            val updatedMessages = state.messages + playerMsg + gmMsg
 
             return state.copy(
                 selectedOrientation = orientation,
                 currentTag = firstEvent.tag,
                 currentEvent = firstEvent,
-                messages = updatedMessages,
+                messages = state.messages + playerMsg + gmMsg,
                 currentOptions = turn1Options,
                 selectedOption = turn1Options.firstOrNull(),
                 turnCount = 1
@@ -125,6 +121,52 @@ class GameTurnHandler(
                     )
                 }
             }
+        }
+
+        if (option.label.contains("Rien acheter", ignoreCase = true)) {
+            var nextOptionsForTurn = state.currentOptions
+            var drawnTag: EventTag? = state.currentTag
+            var nextEvt: StandardEvent? = null
+            var updatedChar = state.character
+
+            val gmMsgText = if (targetTurn <= totalEvents) {
+                val nextTag = tagStrategy.determineNextTag(
+                    previousTag = state.currentTag,
+                    currentStep = targetTurn,
+                    totalSteps = totalEvents,
+                    orientation = state.selectedOrientation ?: ScenarioOrientation.BOUNTY_HUNT
+                )
+                nextEvt = scenarioRepository.getStandardEventByTag(state.selectedUniverse, nextTag)
+                drawnTag = nextEvt.tag
+                nextOptionsForTurn = nextEvt.toActionOptions(state.character.inventory.firstOrNull())
+                "👋 VOUS SALUEZ LE MARCHAND SANS RIEN ACHETER.\n" +
+                        "Vous poursuivez votre chemin.\n\n" +
+                        "📍 ÉPREUVE $targetTurn/$totalEvents — ${nextEvt.title} :\n${nextEvt.description}"
+            } else if (targetTurn == totalEvents + 1) {
+                val orientation = state.selectedOrientation ?: ScenarioOrientation.BOUNTY_HUNT
+                val climax = scenarioRepository.getClimaxEvent(state.selectedUniverse, orientation)
+                nextOptionsForTurn = narrativeEngine.generateActionOptions(state.selectedUniverse, targetTurn, state.character)
+                "👋 VOUS SALUEZ LE MARCHAND SANS RIEN ACHETER.\n" +
+                        "Vous prenez la direction de la confrontation finale !\n\n" +
+                        "🔥 CLIMAX FINAL — ${climax.title} !\n${climax.description}\nAdversaire ultime : ${climax.finalBossName}"
+            } else {
+                val orientation = state.selectedOrientation ?: ScenarioOrientation.BOUNTY_HUNT
+                val victoryRes = victoryHandler.createVictoryState(state.character, orientation)
+                updatedChar = victoryRes.victoriousCharacter
+                nextOptionsForTurn = victoryRes.rewardOptions
+                "👋 VOUS SALUEZ LE MARCHAND SANS RIEN ACHETER.\n\n" + victoryRes.gmMessageText
+            }
+
+            val finalGmMsg = ChatMessage(isFromGameMaster = true, text = gmMsgText)
+            return state.copy(
+                character = updatedChar,
+                currentTag = drawnTag,
+                currentEvent = nextEvt,
+                messages = state.messages + playerMsg + finalGmMsg,
+                currentOptions = nextOptionsForTurn,
+                selectedOption = nextOptionsForTurn.firstOrNull(),
+                turnCount = targetTurn
+            )
         }
 
         if (state.currentEvent?.tag == EventTag.RIDDLE && !option.isItemAction) {

@@ -59,6 +59,14 @@ data class StandardEvent(
         get() = action1Skill
 
     fun toActionOptions(inventoryItem: String? = null): List<ActionOption> {
+        if (isMerchant) {
+            return listOf(
+                ActionOption(1, action1Text, action1Skill),
+                ActionOption(2, action2Text, action2Skill),
+                ActionOption(3, action3Text, action3Skill),
+                ActionOption(4, "🚫 Rien acheter", Skill.PERSUASION)
+            )
+        }
         val options = mutableListOf(
             ActionOption(1, action1Text, action1Skill),
             ActionOption(2, action2Text, action2Skill),
