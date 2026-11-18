@@ -75,6 +75,7 @@ fun AppNavigation(
                         saveNotificationText = uiState.saveNotificationText,
                         showCharacterSheetDialog = uiState.showCharacterSheetDialog,
                         showItemSelectionDialog = uiState.showItemSelectionDialog,
+                        currentEventTag = uiState.currentTag,
                         onOptionSelect = onOptionSelect,
                         onExecuteActionClicked = onExecuteActionClicked,
                         onSaveGameClicked = onSaveGameClicked,

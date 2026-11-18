@@ -60,13 +60,14 @@ class GameActionHandler(
 
         if (character.gold < itemCost) {
             val gmMsgText = "❌ PIÈCES D'OR INSUFFISANTES !\n" +
-                    "L'objet '$boughtItemName' coûte $itemCost PO, mais vous ne possédez que ${character.gold} PO.\n" +
+                    "L'objet '${itemToBuy.name}' coûte $itemCost PO, mais vous ne possédez que ${character.gold} PO.\n" +
                     "L'achat est refusé !"
             return MerchantResult.InsufficientGold(gmMsgText)
         }
 
         val newGold = character.gold - itemCost
-        val updatedInventory = character.inventory + boughtItemName
+        val cleanName = itemToBuy.name
+        val updatedInventory = character.inventory + cleanName
         val updatedChar = character.copy(inventory = updatedInventory, gold = newGold)
 
         val nextOptionsForTurn: List<ActionOption>
@@ -84,14 +85,14 @@ class GameActionHandler(
             drawnTag = nextEvt.tag
             nextOptionsForTurn = nextEvt.toActionOptions(updatedChar.inventory.firstOrNull())
             "🛍️ OBJET ACQUIS !\n" +
-                    "Vous obtenez l'objet '$boughtItemName' (${itemToBuy.effectDescription}) pour $itemCost PO ! (Solde restant : $newGold PO).\n\n" +
+                    "Vous obtenez l'objet '$cleanName' (${itemToBuy.effectDescription}) pour $itemCost PO ! (Solde restant : $newGold PO).\n\n" +
                     "📍 ÉPREUVE $targetTurn/$totalEvents — ${nextEvt.title} :\n${nextEvt.description}"
         } else if (targetTurn == totalEvents + 1) {
             val orientation = selectedOrientation ?: ScenarioOrientation.BOUNTY_HUNT
             val climax = scenarioRepository.getClimaxEvent(universe, orientation)
             nextOptionsForTurn = narrativeEngine.generateActionOptions(universe, targetTurn, updatedChar)
             "🛍️ OBJET ACQUIS !\n" +
-                    "Vous obtenez '$boughtItemName' (${itemToBuy.effectDescription}) pour $itemCost PO ! (Solde restant : $newGold PO).\n\n" +
+                    "Vous obtenez '$cleanName' (${itemToBuy.effectDescription}) pour $itemCost PO ! (Solde restant : $newGold PO).\n\n" +
                     "🔥 CLIMAX FINAL — ${climax.title} !\n${climax.description}\nAdversaire ultime : ${climax.finalBossName}"
         } else {
             val catalogItems = GameItemCatalog.getItemsForUniverse(universe).shuffled().take(3)
@@ -102,7 +103,7 @@ class GameActionHandler(
                 ActionOption(99, "🔄 Continuer l'aventure (Niveau ${updatedChar.level})", Skill.PERSUASION)
             )
             "🛍️ OBJET ACQUIS AU MARCHÉ DE NIVEAU !\n" +
-                    "Vous obtenez l'objet '$boughtItemName' (${itemToBuy.effectDescription}) pour $itemCost PO ! (Solde restant : $newGold PO).\n\n" +
+                    "Vous obtenez l'objet '$cleanName' (${itemToBuy.effectDescription}) pour $itemCost PO ! (Solde restant : $newGold PO).\n\n" +
                     "Vous pouvez effectuer un autre achat ci-dessous ou cliquer sur 'Continuer l'aventure' pour démarrer la quête de Niveau ${updatedChar.level} !"
         }
 
@@ -127,7 +128,11 @@ class GameActionHandler(
         selectedOrientation: ScenarioOrientation?
     ): StandardActionResult {
         val isClimaxTurn = (currentTurnCount == totalEvents + 1)
-        val hpLostOnFailure = if (isClimaxTurn) 3 else 1
+        val hpLostOnFailure = if (isClimaxTurn) {
+            (character.level / 2).coerceAtLeast(1)
+        } else {
+            (character.level / 3).coerceAtLeast(1)
+        }
 
         val quadruple = resolveActionUseCase(
             universe = universe,
@@ -180,7 +185,7 @@ class GameActionHandler(
             val skillName = quadruple.resolution.skill.displayName
             val statName = quadruple.resolution.skill.attribute.displayName
             "🎲 RÉUSSITE ! [Action : ${option.label}] ($skillName - $statName)\n" +
-                    "(Jet: ${quadruple.resolution.diceRoll} <= Cible: ${quadruple.resolution.targetValue})\n\n" +
+                    "(Jet: ${quadruple.resolution.diceRoll} < Cible: ${quadruple.resolution.targetValue})\n\n" +
                     "📍 ÉPREUVE $newTurnCount/$totalEvents — ${nextEvent.title} :\n${nextEvent.description}"
         } else if (newTurnCount == totalEvents + 1) {
             val orientation = selectedOrientation ?: ScenarioOrientation.BOUNTY_HUNT
@@ -189,7 +194,7 @@ class GameActionHandler(
             val skillName = quadruple.resolution.skill.displayName
             val statName = quadruple.resolution.skill.attribute.displayName
             "🎲 RÉUSSITE ! [Action : ${option.label}] ($skillName - $statName)\n" +
-                    "(Jet: ${quadruple.resolution.diceRoll} <= Cible: ${quadruple.resolution.targetValue})\n\n" +
+                    "(Jet: ${quadruple.resolution.diceRoll} < Cible: ${quadruple.resolution.targetValue})\n\n" +
                     "🔥 CLIMAX FINAL — ${climax.title} !\n" +
                     "${climax.description}\n" +
                     "Adversaire ultime : ${climax.finalBossName}"

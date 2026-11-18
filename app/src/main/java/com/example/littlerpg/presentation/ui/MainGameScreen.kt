@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.example.littlerpg.domain.model.ActionOption
 import com.example.littlerpg.domain.model.Character
 import com.example.littlerpg.domain.model.ChatMessage
+import com.example.littlerpg.domain.model.EventTag
 import com.example.littlerpg.domain.model.Skill
 import com.example.littlerpg.domain.model.UniverseType
 import com.example.littlerpg.ui.theme.LittleRpgTheme
@@ -41,6 +42,7 @@ fun MainGameScreen(
     saveNotificationText: String?,
     showCharacterSheetDialog: Boolean = false,
     showItemSelectionDialog: Boolean = false,
+    currentEventTag: EventTag? = null,
     onOptionSelect: (ActionOption) -> Unit,
     onExecuteActionClicked: () -> Unit,
     onSaveGameClicked: () -> Unit,
@@ -53,6 +55,7 @@ fun MainGameScreen(
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
+    val isRiddleEvent = (currentEventTag == EventTag.RIDDLE)
 
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
@@ -113,10 +116,12 @@ fun MainGameScreen(
         ) {
             currentOptions.forEach { option ->
                 val isSelected = selectedOption?.id == option.id
-                val optionText = if (option.orientation != null || option.isItemAction) {
+                val optionText = if (option.orientation != null || option.isItemAction || isRiddleEvent) {
                     option.label
                 } else {
-                    "${option.label} (${option.skill.displayName})"
+                    val difficultyMod = character.level / 3
+                    val targetVal = character.getEffectiveAttributeValue(option.skill.attribute) - difficultyMod
+                    "${option.label} (${option.skill.displayName} - Cible: $targetVal)"
                 }
                 Button(
                     onClick = {
@@ -167,6 +172,11 @@ fun MainGameScreen(
                 )
             }
         } else {
+            val actionButtonText = when {
+                selectedOption?.isItemAction == true -> "Utiliser l'objet"
+                isRiddleEvent -> "Valider la réponse"
+                else -> "Lancer"
+            }
             Button(
                 onClick = {
                     if (selectedOption?.isItemAction == true) {
@@ -183,7 +193,7 @@ fun MainGameScreen(
                     .height(50.dp)
             ) {
                 Text(
-                    text = "Lancer",
+                    text = actionButtonText,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )

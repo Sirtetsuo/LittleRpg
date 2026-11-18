@@ -22,8 +22,9 @@ class RuleEngine(private val random: Random = Random.Default) {
     ): Pair<ActionResolution, Character> {
         val auto = isItemAction || isAutoSuccess
         val diceRoll = if (auto) 1 else (forcedRoll ?: rollD20())
-        val targetValue = character.getEffectiveAttributeValue(skill.attribute)
-        val isSuccess = if (auto) true else (diceRoll <= targetValue)
+        val difficultyModifier = character.level / 3
+        val targetValue = character.getEffectiveAttributeValue(skill.attribute) - difficultyModifier
+        val isSuccess = if (auto) true else (diceRoll < targetValue)
         val hpLost = if (isSuccess) 0 else hpLostOnFailure
         val newHp = max(0, character.hp - hpLost)
 

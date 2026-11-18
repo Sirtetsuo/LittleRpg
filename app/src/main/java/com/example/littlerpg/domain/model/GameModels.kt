@@ -96,13 +96,14 @@ data class GameItem(
                 text == "AUTO_AGI" -> ItemEffect.AutoSuccess(Attribute.AGILITY)
                 text.contains("(1 tour)", ignoreCase = true) -> {
                     when {
-                        text.contains("FOR") -> ItemEffect.TempBoost(Attribute.STRENGTH, 3)
-                        text.contains("INT") -> ItemEffect.TempBoost(Attribute.INTELLIGENCE, 3)
-                        text.contains("AGI") -> ItemEffect.TempBoost(Attribute.AGILITY, 3)
+                        text.contains("FOR", ignoreCase = true) -> ItemEffect.TempBoost(Attribute.STRENGTH, 3)
+                        text.contains("INT", ignoreCase = true) -> ItemEffect.TempBoost(Attribute.INTELLIGENCE, 3)
+                        text.contains("AGI", ignoreCase = true) -> ItemEffect.TempBoost(Attribute.AGILITY, 3)
                         else -> ItemEffect.TempBoost(Attribute.STRENGTH, 3)
                     }
                 }
-                text.contains("+1 FOR, +1 INT, +1 AGI") || (text.contains("FOR") && text.contains("INT") && text.contains("AGI")) -> {
+                text.contains("+1 FOR, +1 INT, +1 AGI", ignoreCase = true) ||
+                        (text.contains("FOR", ignoreCase = true) && text.contains("INT", ignoreCase = true) && text.contains("AGI", ignoreCase = true)) -> {
                     ItemEffect.PermanentBonus(strBonus = 1, intBonus = 1, agiBonus = 1)
                 }
                 !isConsumable -> {
@@ -115,15 +116,15 @@ data class GameItem(
                         val pt = p.trim()
                         val num = Regex("""\+(\d+)""").find(pt)?.groupValues?.get(1)?.toIntOrNull() ?: 0
                         when {
-                            pt.contains("FOR") -> str += num
-                            pt.contains("INT") -> intV += num
-                            pt.contains("AGI") -> agi += num
-                            pt.contains("PV") -> hp += num
+                            pt.contains("FOR", ignoreCase = true) -> str += num
+                            pt.contains("INT", ignoreCase = true) -> intV += num
+                            pt.contains("AGI", ignoreCase = true) -> agi += num
+                            pt.contains("PV", ignoreCase = true) -> hp += num
                         }
                     }
                     ItemEffect.PermanentBonus(strBonus = str, intBonus = intV, agiBonus = agi, hpBonus = hp)
                 }
-                text.contains("PV") -> {
+                text.contains("PV", ignoreCase = true) -> {
                     val amount = Regex("""\+(\d+)""").find(text)?.groupValues?.get(1)?.toIntOrNull() ?: 0
                     ItemEffect.Heal(amount = amount)
                 }
@@ -132,17 +133,21 @@ data class GameItem(
         }
 
         fun fromName(name: String): GameItem {
-            val trimmed = name.trim()
+            val cleanName = name
+                .substringBefore("(")
+                .replace("Acheter :", "", ignoreCase = true)
+                .trim()
+
             return when {
-                trimmed.equals("Épée rouillée", ignoreCase = true) || trimmed.contains("épée rouillée", ignoreCase = true) ->
+                cleanName.equals("Épée rouillée", ignoreCase = true) || cleanName.contains("épée rouillée", ignoreCase = true) ->
                     GameItem(0, "Épée rouillée", "Arme de départ (aucun bonus)", isConsumable = false, universe = UniverseType.FANTASTIC)
-                trimmed.equals("Pistolet", ignoreCase = true) ->
+                cleanName.equals("Pistolet", ignoreCase = true) ->
                     GameItem(1000, "Pistolet", "Arme de départ (aucun bonus)", isConsumable = false, universe = UniverseType.CONTEMPORARY)
-                trimmed.equals("Blaster", ignoreCase = true) ->
+                cleanName.equals("Blaster", ignoreCase = true) ->
                     GameItem(2000, "Blaster", "Arme de départ (aucun bonus)", isConsumable = false, universe = UniverseType.FUTURISTIC)
-                else -> GameItemCatalog.getItemByName(name) ?: GameItem(
-                    id = name.hashCode(),
-                    name = name,
+                else -> GameItemCatalog.getItemByName(cleanName) ?: GameItem(
+                    id = cleanName.hashCode(),
+                    name = cleanName,
                     effectDescription = "Effet spécial",
                     isConsumable = true
                 )
@@ -150,8 +155,6 @@ data class GameItem(
         }
     }
 }
-
-
 
 data class Character(
     val name: String,
@@ -232,4 +235,3 @@ data class ChatMessage(
     val text: String,
     val timestamp: Long = System.currentTimeMillis()
 )
-

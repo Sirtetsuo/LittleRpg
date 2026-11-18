@@ -119,7 +119,7 @@ class GameDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, 
 
     companion object {
         const val DATABASE_NAME = "littlerpg.db"
-        const val DATABASE_VERSION = 11
+        const val DATABASE_VERSION = 12
 
         const val TABLE_SESSION = "game_session"
         const val COL_ID = "_id"
@@ -132,7 +132,7 @@ class GameDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, 
         const val COL_CHAR_HP = "char_hp"
         const val COL_CHAR_MAX_HP = "char_max_hp"
         const val COL_CHAR_LEVEL = "char_level"
-        val COL_CHAR_INVENTORY = "char_inventory"
+        const val COL_CHAR_INVENTORY = "char_inventory"
         const val COL_CHAR_GOLD = "char_gold"
         const val COL_UNIVERSE = "universe_type"
         const val COL_UPDATED_AT = "updated_at"

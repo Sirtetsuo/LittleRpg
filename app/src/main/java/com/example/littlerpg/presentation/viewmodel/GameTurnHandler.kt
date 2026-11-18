@@ -124,7 +124,7 @@ class GameTurnHandler(
         }
 
         if (option.label.contains("Rien acheter", ignoreCase = true)) {
-            var nextOptionsForTurn = state.currentOptions
+            val nextOptionsForTurn: List<ActionOption>
             var drawnTag: EventTag? = state.currentTag
             var nextEvt: StandardEvent? = null
             var updatedChar = state.character
@@ -169,46 +169,44 @@ class GameTurnHandler(
             )
         }
 
-        if (state.currentEvent?.tag == EventTag.RIDDLE && !option.isItemAction) {
-            val currentEvt = state.currentEvent
-            if (currentEvt != null) {
-                val riddleResult = riddleHandler.handleRiddleAction(
-                    option = option,
-                    currentEvt = currentEvt,
-                    character = state.character,
-                    universe = state.selectedUniverse,
-                    targetTurn = targetTurn,
-                    totalEvents = totalEvents,
-                    currentTurnCount = state.turnCount,
-                    currentTag = state.currentTag,
-                    currentOptions = state.currentOptions,
-                    selectedOrientation = state.selectedOrientation
-                )
+        val currentEvt = state.currentEvent
+        if (currentEvt?.tag == EventTag.RIDDLE) {
+            val riddleResult = riddleHandler.handleRiddleAction(
+                option = option,
+                currentEvt = currentEvt,
+                character = state.character,
+                universe = state.selectedUniverse,
+                targetTurn = targetTurn,
+                totalEvents = totalEvents,
+                currentTurnCount = state.turnCount,
+                currentTag = state.currentTag,
+                currentOptions = state.currentOptions,
+                selectedOrientation = state.selectedOrientation
+            )
 
-                return when (riddleResult) {
-                    is RiddleResult.Success -> {
-                        val finalGmMsg = ChatMessage(isFromGameMaster = true, text = riddleResult.gmMsgText)
-                        state.copy(
-                            character = riddleResult.updatedCharacter,
-                            currentTag = riddleResult.drawnTag,
-                            currentEvent = riddleResult.nextEvent,
-                            messages = state.messages + playerMsg + finalGmMsg,
-                            currentOptions = riddleResult.nextOptions,
-                            selectedOption = riddleResult.nextOptions.firstOrNull(),
-                            turnCount = targetTurn
-                        )
-                    }
-                    is RiddleResult.Failure -> {
-                        val finalGmMsg = ChatMessage(isFromGameMaster = true, text = riddleResult.gmMsgText)
-                        val nextStep = if (riddleResult.isDead) ScreenStep.GameOver else state.currentStep
-                        state.copy(
-                            character = riddleResult.updatedCharacter,
-                            messages = state.messages + playerMsg + finalGmMsg,
-                            currentOptions = if (riddleResult.isDead) emptyList() else state.currentOptions,
-                            selectedOption = if (riddleResult.isDead) null else option,
-                            currentStep = nextStep
-                        )
-                    }
+            return when (riddleResult) {
+                is RiddleResult.Success -> {
+                    val finalGmMsg = ChatMessage(isFromGameMaster = true, text = riddleResult.gmMsgText)
+                    state.copy(
+                        character = riddleResult.updatedCharacter,
+                        currentTag = riddleResult.drawnTag,
+                        currentEvent = riddleResult.nextEvent,
+                        messages = state.messages + playerMsg + finalGmMsg,
+                        currentOptions = riddleResult.nextOptions,
+                        selectedOption = riddleResult.nextOptions.firstOrNull(),
+                        turnCount = targetTurn
+                    )
+                }
+                is RiddleResult.Failure -> {
+                    val finalGmMsg = ChatMessage(isFromGameMaster = true, text = riddleResult.gmMsgText)
+                    val nextStep = if (riddleResult.isDead) ScreenStep.GameOver else state.currentStep
+                    state.copy(
+                        character = riddleResult.updatedCharacter,
+                        messages = state.messages + playerMsg + finalGmMsg,
+                        currentOptions = if (riddleResult.isDead) emptyList() else riddleResult.remainingOptions,
+                        selectedOption = if (riddleResult.isDead) null else riddleResult.remainingOptions.firstOrNull(),
+                        currentStep = nextStep
+                    )
                 }
             }
         }
@@ -237,6 +235,7 @@ class GameTurnHandler(
         return state.copy(
             character = stdResult.updatedCharacter,
             currentTag = stdResult.drawnTag,
+            currentEvent = stdResult.nextEvent,
             messages = state.messages + playerMsg + finalGmMsg,
             currentOptions = stdResult.nextOptions,
             selectedOption = stdResult.nextOptions.firstOrNull(),

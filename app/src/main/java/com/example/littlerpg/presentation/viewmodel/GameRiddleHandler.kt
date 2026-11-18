@@ -19,10 +19,12 @@ sealed interface RiddleResult {
         val gmMsgText: String,
         val nextOptions: List<ActionOption>
     ) : RiddleResult
+
     data class Failure(
         val updatedCharacter: Character,
         val isDead: Boolean,
-        val gmMsgText: String
+        val gmMsgText: String,
+        val remainingOptions: List<ActionOption>
     ) : RiddleResult
 }
 
@@ -45,13 +47,19 @@ class GameRiddleHandler(
         currentOptions: List<ActionOption>,
         selectedOrientation: ScenarioOrientation?
     ): RiddleResult {
-        val isCorrect = (option.id == currentEvt.correctActionIndex)
+        val isCorrect = option.isItemAction || (option.id == currentEvt.correctActionIndex)
 
         if (isCorrect) {
-            var nextOptionsForTurn = currentOptions
+            val nextOptionsForTurn: List<ActionOption>
             var drawnTag: EventTag? = currentTag
             var nextEvt: StandardEvent? = null
             var updatedChar = character
+
+            val successLabelText = if (option.isItemAction) {
+                "L'utilisation de votre objet (${option.itemName ?: "Objet magique"}) résout instantanément le piège !"
+            } else {
+                "'${option.label}' est la BONNE RÉPONSE !"
+            }
 
             val gmMsgText = if (targetTurn <= totalEvents) {
                 val nextTag = tagStrategy.determineNextTag(
@@ -64,14 +72,14 @@ class GameRiddleHandler(
                 drawnTag = nextEvt.tag
                 nextOptionsForTurn = nextEvt.toActionOptions(character.inventory.firstOrNull())
                 "🧩 ÉNIGME RÉSOLUE !\n" +
-                        "'${option.label}' est la BONNE RÉPONSE ! Le mécanisme se déverrouille.\n\n" +
+                        "$successLabelText Le mécanisme se déverrouille.\n\n" +
                         "📍 ÉPREUVE $targetTurn/$totalEvents — ${nextEvt.title} :\n${nextEvt.description}"
             } else if (targetTurn == totalEvents + 1) {
                 val orientation = selectedOrientation ?: ScenarioOrientation.BOUNTY_HUNT
                 val climax = scenarioRepository.getClimaxEvent(universe, orientation)
                 nextOptionsForTurn = narrativeEngine.generateActionOptions(universe, targetTurn, character)
                 "🧩 ÉNIGME RÉSOLUE !\n" +
-                        "'${option.label}' est la BONNE RÉPONSE ! Le mécanisme se déverrouille.\n\n" +
+                        "$successLabelText Le mécanisme se déverrouille.\n\n" +
                         "🔥 CLIMAX FINAL — ${climax.title} !\n${climax.description}\nAdversaire ultime : ${climax.finalBossName}"
             } else {
                 val orientation = selectedOrientation ?: ScenarioOrientation.BOUNTY_HUNT
@@ -90,20 +98,27 @@ class GameRiddleHandler(
             )
         } else {
             val isClimaxRiddle = (currentTurnCount == totalEvents + 1)
-            val hpLoss = if (isClimaxRiddle) 3 else 1
+            val hpLoss = if (isClimaxRiddle) {
+                (character.level / 2).coerceAtLeast(1)
+            } else {
+                (character.level / 3).coerceAtLeast(1)
+            }
             val newHp = (character.hp - hpLoss).coerceAtLeast(0)
             val updatedChar = character.copy(hp = newHp)
             val isDead = newHp <= 0
 
+            val remainingOptions = currentOptions.filter { it.id != option.id }
+
             val gmMsgText = "❌ MAUVAISE RÉPONSE !\n" +
                     "'${option.label}' est incorrect. Le piège de l'énigme se déclenche et vous inflige -$hpLoss PV " +
                     "(${updatedChar.hp}/${updatedChar.getEffectiveMaxHp()} PV restants).\n\n" +
-                    "⚠️ Retentez votre chance avec une autre réponse !"
+                    "⚠️ Choisissez une autre réponse parmi les options restantes !"
 
             return RiddleResult.Failure(
                 updatedCharacter = updatedChar,
                 isDead = isDead,
-                gmMsgText = gmMsgText
+                gmMsgText = gmMsgText,
+                remainingOptions = remainingOptions
             )
         }
     }

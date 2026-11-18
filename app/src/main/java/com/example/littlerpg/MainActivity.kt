@@ -11,12 +11,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.CreationExtras
 import com.example.littlerpg.data.db.GameDatabaseDataSource
 import com.example.littlerpg.data.db.GameDbHelper
 import com.example.littlerpg.data.repository.GameRepositoryImpl
 import com.example.littlerpg.data.repository.ScenarioRepositoryImpl
 import com.example.littlerpg.domain.engine.NarrativeEngine
 import com.example.littlerpg.domain.engine.RuleEngine
+import com.example.littlerpg.domain.repository.ScenarioRepository
 import com.example.littlerpg.domain.usecase.ClearSavedGameUseCase
 import com.example.littlerpg.domain.usecase.HasSavedGameUseCase
 import com.example.littlerpg.domain.usecase.LoadGameUseCase
@@ -25,6 +27,37 @@ import com.example.littlerpg.domain.usecase.SaveGameUseCase
 import com.example.littlerpg.presentation.ui.AppNavigation
 import com.example.littlerpg.presentation.viewmodel.GameViewModel
 import com.example.littlerpg.ui.theme.LittleRpgTheme
+
+class GameViewModelFactory(
+    private val resolveActionUseCase: ResolveActionUseCase,
+    private val narrativeEngine: NarrativeEngine,
+    private val saveGameUseCase: SaveGameUseCase,
+    private val loadGameUseCase: LoadGameUseCase,
+    private val hasSavedGameUseCase: HasSavedGameUseCase,
+    private val clearSavedGameUseCase: ClearSavedGameUseCase,
+    private val scenarioRepository: ScenarioRepository
+) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(GameViewModel::class.java)) {
+            return GameViewModel(
+                resolveActionUseCase = resolveActionUseCase,
+                narrativeEngine = narrativeEngine,
+                saveGameUseCase = saveGameUseCase,
+                loadGameUseCase = loadGameUseCase,
+                hasSavedGameUseCase = hasSavedGameUseCase,
+                clearSavedGameUseCase = clearSavedGameUseCase,
+                scenarioRepository = scenarioRepository
+            ) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
+        return create(modelClass)
+    }
+}
 
 class MainActivity : ComponentActivity() {
 
@@ -47,20 +80,15 @@ class MainActivity : ComponentActivity() {
         val hasSavedGameUseCase = HasSavedGameUseCase(repository)
         val clearSavedGameUseCase = ClearSavedGameUseCase(repository)
 
-        val factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return GameViewModel(
-                    resolveActionUseCase = resolveActionUseCase,
-                    narrativeEngine = narrativeEngine,
-                    saveGameUseCase = saveGameUseCase,
-                    loadGameUseCase = loadGameUseCase,
-                    hasSavedGameUseCase = hasSavedGameUseCase,
-                    clearSavedGameUseCase = clearSavedGameUseCase,
-                    scenarioRepository = scenarioRepository
-                ) as T
-            }
-        }
+        val factory = GameViewModelFactory(
+            resolveActionUseCase = resolveActionUseCase,
+            narrativeEngine = narrativeEngine,
+            saveGameUseCase = saveGameUseCase,
+            loadGameUseCase = loadGameUseCase,
+            hasSavedGameUseCase = hasSavedGameUseCase,
+            clearSavedGameUseCase = clearSavedGameUseCase,
+            scenarioRepository = scenarioRepository
+        )
 
         viewModel = ViewModelProvider(this, factory)[GameViewModel::class.java]
 

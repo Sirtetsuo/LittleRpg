@@ -3,13 +3,17 @@ package com.example.littlerpg.presentation.ui
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -34,10 +38,13 @@ fun GameOverScreen(
     onRestartNewGame: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val scrollState = rememberScrollState()
+
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(20.dp),
+            .verticalScroll(scrollState)
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -55,9 +62,10 @@ fun GameOverScreen(
                 Image(
                     painter = painterResource(id = R.drawable.gameover),
                     contentDescription = "Game Over",
-                    contentScale = ContentScale.Crop,
+                    contentScale = ContentScale.Fit,
                     modifier = Modifier
-                        .size(180.dp)
+                        .fillMaxWidth()
+                        .heightIn(max = 260.dp)
                         .clip(RoundedCornerShape(12.dp))
                 )
 
@@ -76,25 +84,28 @@ fun GameOverScreen(
                 Text(
                     text = "Vos points de vie sont tombés à zéro. Votre aventure s'achève ici dans les ténèbres...",
                     fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f),
+                    color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.85f),
                     textAlign = TextAlign.Center
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         Button(
             onClick = onRestartNewGame,
             modifier = Modifier
-                .fillMaxWidth(0.80f)
-                .height(52.dp),
+                .fillMaxWidth()
+                .defaultMinSize(minHeight = 52.dp),
+            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 14.dp),
             shape = RoundedCornerShape(12.dp)
         ) {
             Text(
                 text = "Commencer une Nouvelle Partie",
                 fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }
